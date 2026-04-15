@@ -1,95 +1,114 @@
-document.addEventListener('DOMContentLoaded', () => {
+// 模块化代码结构
+const App = {
+    // 初始化应用
+    init() {
+        this.setupLoadingOverlay();
+        this.sortPosts();
+        this.initializeElements();
+        this.setupLightbox();
+        this.renderInitialBook();
+        this.initializePageFlip();
+        this.setupEventListeners();
+        this.initMusic();
+        this.setupBackToTop();
+        this.setupCleanup();
+    },
 
-    // --- Loading Overlay Logic ---
-    const loadingOverlay = document.getElementById('loading-overlay');
-    window.addEventListener('load', () => {
-        loadingOverlay.classList.add('hidden');
-        // Remove from DOM after transition
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-        }, 500);
-    });
-    // Fallback: remove loader after 3 seconds anyway
-    setTimeout(() => {
-        if (!loadingOverlay.classList.contains('hidden')) {
+    // 设置加载覆盖层
+    setupLoadingOverlay() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        window.addEventListener('load', () => {
             loadingOverlay.classList.add('hidden');
             setTimeout(() => {
                 loadingOverlay.style.display = 'none';
             }, 500);
-        }
-    }, 3000);
-
-    // Sort posts by date, newest first
-    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    const book = document.getElementById('book');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    
-    // --- Close Lightbox ---
-    const lightbox = document.getElementById('lightbox');
-    const lightboxClose = document.getElementById('lightbox-close');
-
-    const closeLightbox = () => {
-        lightbox.classList.add('hidden');
-    };
-
-    lightbox.addEventListener('click', (e) => {
-        if (e.target === lightbox) { // Only close if clicking on the background
-            closeLightbox();
-        }
-    });
-    
-    // Explicitly handle close button click
-    lightboxClose.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent bubbling
-        closeLightbox();
-    });
-
-    // --- Lightbox functionality ---
-    const setupLightbox = (imgElement) => {
-        imgElement.classList.add('cursor-pointer');
+        });
         
-        imgElement.onerror = () => {
-            imgElement.src = 'https://via.placeholder.com/400x400?text=Image+Not+Found';
+        //  fallback: 3秒后强制移除加载器
+        setTimeout(() => {
+            if (!loadingOverlay.classList.contains('hidden')) {
+                loadingOverlay.classList.add('hidden');
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 500);
+            }
+        }, 3000);
+    },
+
+    // 排序帖子
+    sortPosts() {
+        posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+    },
+
+    // 初始化元素
+    initializeElements() {
+        this.book = document.getElementById('book');
+        this.prevBtn = document.getElementById('prev-btn');
+        this.nextBtn = document.getElementById('next-btn');
+        this.lightbox = document.getElementById('lightbox');
+        this.lightboxClose = document.getElementById('lightbox-close');
+    },
+
+    // 设置灯箱功能
+    setupLightbox() {
+        const closeLightbox = () => {
+            this.lightbox.classList.add('hidden');
         };
-        
-        imgElement.addEventListener('mousedown', (e) => e.stopPropagation());
-        imgElement.addEventListener('mouseup', (e) => e.stopPropagation());
-        imgElement.addEventListener('touchstart', (e) => e.stopPropagation());
-        imgElement.addEventListener('touchend', (e) => e.stopPropagation());
 
-        imgElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImg = document.getElementById('lightbox-img');
-            const lightboxCaption = document.getElementById('lightbox-caption');
-            
-            let currentImageSrc = e.target.getAttribute('data-src') || e.target.getAttribute('src');
-            
-            lightboxImg.src = currentImageSrc;
-            lightboxCaption.textContent = e.target.alt || '';
-            lightbox.classList.remove('hidden');
-
-            const music = document.getElementById('bg-music');
-            const musicToggle = document.getElementById('music-toggle');
-            const musicIcon = musicToggle.querySelector('i');
-            
-            if (music.paused) {
-                music.play().then(() => {
-                    musicIcon.classList.remove('fa-play');
-                    musicIcon.classList.add('fa-pause');
-                    if (typeof musicPlayedOnce !== 'undefined') {
-                        musicPlayedOnce = true;
-                    }
-                }).catch(err => console.log("Audio play failed:", err));
+        this.lightbox.addEventListener('click', (e) => {
+            if (e.target === this.lightbox) {
+                closeLightbox();
             }
         });
-    };
 
-    // --- Page Rendering Logic ---
-    const createPageElement = (post, index) => {
+        this.lightboxClose.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeLightbox();
+        });
+
+        this.setupLightbox = (imgElement) => {
+            imgElement.classList.add('cursor-pointer');
+            
+            imgElement.onerror = () => {
+                imgElement.src = 'https://via.placeholder.com/400x400?text=Image+Not+Found';
+            };
+            
+            imgElement.addEventListener('mousedown', (e) => e.stopPropagation());
+            imgElement.addEventListener('mouseup', (e) => e.stopPropagation());
+            imgElement.addEventListener('touchstart', (e) => e.stopPropagation());
+            imgElement.addEventListener('touchend', (e) => e.stopPropagation());
+
+            imgElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                const lightboxImg = document.getElementById('lightbox-img');
+                const lightboxCaption = document.getElementById('lightbox-caption');
+                
+                let currentImageSrc = e.target.getAttribute('data-src') || e.target.getAttribute('src');
+                
+                lightboxImg.src = currentImageSrc;
+                lightboxCaption.textContent = e.target.alt || '';
+                this.lightbox.classList.remove('hidden');
+
+                const music = document.getElementById('bg-music');
+                const musicToggle = document.getElementById('music-toggle');
+                const musicIcon = musicToggle.querySelector('i');
+                
+                if (music.paused) {
+                    music.play().then(() => {
+                        musicIcon.classList.remove('fa-play');
+                        musicIcon.classList.add('fa-pause');
+                        if (typeof musicPlayedOnce !== 'undefined') {
+                            musicPlayedOnce = true;
+                        }
+                    }).catch(err => console.log("Audio play failed:", err));
+                }
+            });
+        };
+    },
+
+    // 创建页面元素
+    createPageElement(post, index) {
         const page = document.createElement('div');
         page.classList.add('page');
         page.setAttribute('data-page-index', index);
@@ -108,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (count === 3 && i === 2) spanClass = 'col-span-2 w-1/2 mx-auto aspect-square';
                 else if (count === 1) spanClass = 'w-full h-full flex items-center justify-center';
 
-                // Use a low-quality placeholder and add width/height attributes
                 return `<div class="${spanClass} overflow-hidden rounded shadow-sm relative group flex items-center justify-center ${count > 1 ? 'bg-gray-50' : ''}">
                             <img data-src="${img}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3C/svg%3E" alt="${post.title}" loading="lazy" class="w-full h-full object-contain bg-gray-50 hover:scale-105 transition-transform duration-500" width="400" height="400">
                         </div>`;
@@ -148,20 +166,19 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         return page;
-    };
+    },
 
-    const loadImagesOnPage = (pageElement) => {
+    // 加载页面上的图片
+    loadImagesOnPage(pageElement) {
         if (!pageElement || pageElement.dataset.imagesLoaded === 'true') {
             return;
         }
         const images = pageElement.querySelectorAll('img[data-src]');
         images.forEach(img => {
             if (img.dataset.src) {
-                // Create image object for preloading
                 const imgObj = new Image();
                 imgObj.onload = () => {
                     img.src = img.dataset.src;
-                    // Add fade-in effect
                     img.style.opacity = '0';
                     img.style.transition = 'opacity 0.3s ease-in-out';
                     setTimeout(() => {
@@ -172,13 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         pageElement.dataset.imagesLoaded = 'true';
-    };
+    },
 
-    const renderInitialBook = () => {
-        // Use document fragment to reduce reflows
+    // 渲染初始书籍
+    renderInitialBook() {
         const fragment = document.createDocumentFragment();
 
-        // --- Create Cover (Front) ---
+        // 创建封面
         const coverSheet = document.createElement('div');
         coverSheet.classList.add('page', 'page-cover', 'page-cover-top');
         coverSheet.setAttribute('data-density', 'hard');
@@ -201,17 +218,16 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         fragment.appendChild(coverSheet);
 
-        // --- Create placeholders for all pages ---
+        // 创建所有页面的占位符
         posts.forEach((post, index) => {
             const page = document.createElement('div');
             page.classList.add('page');
             page.setAttribute('data-page-index', index);
-            // Add a simple placeholder to maintain structure
             page.innerHTML = `<div class="page-content bg-[#fdfaf6]"></div>`;
             fragment.appendChild(page);
         });
 
-        // --- Create Back Cover ---
+        // 创建封底
         const backCover = document.createElement('div');
         backCover.classList.add('page', 'page-cover', 'page-cover-bottom');
         backCover.setAttribute('data-density', 'hard');
@@ -229,353 +245,346 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         fragment.appendChild(backCover);
 
-        // Append all elements at once to minimize reflows
-        book.innerHTML = '';
-        book.appendChild(fragment);
-    };
+        this.book.innerHTML = '';
+        this.book.appendChild(fragment);
+    },
 
-    renderInitialBook();
+    // 初始化页面翻转
+    initializePageFlip() {
+        setTimeout(() => {
+            this.pageFlip = new St.PageFlip(document.getElementById('book'), {
+                width: 400,
+                height: 600,
+                size: 'stretch',
+                minWidth: 300,
+                maxWidth: 1000,
+                minHeight: 400,
+                maxHeight: 1200,
+                maxShadowOpacity: 0.5,
+                showCover: true,
+                mobileScrollSupport: false,
+                usePortrait: true,
+                drawShadow: true
+            });
 
-    // --- Initialize StPageFlip ---
-    // Wait for images to load or just init after a small delay
-    setTimeout(() => {
-        const pageFlip = new St.PageFlip(document.getElementById('book'), {
-            width: 400, // base width
-            height: 600, // base height
-            size: 'stretch',
-            minWidth: 300,
-            maxWidth: 1000,
-            minHeight: 400,
-            maxHeight: 1200,
-            maxShadowOpacity: 0.5,
-            showCover: true,
-            mobileScrollSupport: false, // disable mobile scroll to prevent interference
-            usePortrait: true,
-            drawShadow: true
-        });
+            this.pageFlip.loadFromHTML(document.querySelectorAll('.page'));
+            this.preloadInitialPages();
+            this.setupPageFlipEvents();
+        }, 100);
+    },
 
-        pageFlip.loadFromHTML(document.querySelectorAll('.page'));
-
-        const updatePageContent = (pageIndex) => {
-            if (pageIndex < 1 || pageIndex > posts.length) return;
-
-            const pageElement = book.querySelector(`[data-page-index="${pageIndex - 1}"]`);
-            if (pageElement && !pageElement.dataset.rendered) {
-                const post = posts[pageIndex - 1];
-                const newPage = createPageElement(post, pageIndex - 1);
-                // Use requestAnimationFrame to minimize repaints
-                requestAnimationFrame(() => {
-                    pageElement.innerHTML = newPage.innerHTML;
-                    pageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
-                    pageElement.dataset.rendered = 'true';
-                });
-            }
-        };
-
-        // Preload initial pages for a smoother experience
-        const initialPagesToLoad = 5; // Increased to 5 to ensure more pages are preloaded
+    // 预加载初始页面
+    preloadInitialPages() {
+        const initialPagesToLoad = 5;
         for (let i = 1; i <= initialPagesToLoad; i++) {
-            updatePageContent(i);
+            this.updatePageContent(i);
         }
         
-        // Load images for the first three pages that will be visible
         setTimeout(() => {
-            loadImagesOnPage(book.querySelector('[data-page-index="0"]'));
-            loadImagesOnPage(book.querySelector('[data-page-index="1"]'));
-            loadImagesOnPage(book.querySelector('[data-page-index="2"]'));
+            this.loadImagesOnPage(this.book.querySelector('[data-page-index="0"]'));
+            this.loadImagesOnPage(this.book.querySelector('[data-page-index="1"]'));
+            this.loadImagesOnPage(this.book.querySelector('[data-page-index="2"]'));
         }, 50);
+    },
 
-        // --- Navigation Handlers ---
-        nextBtn.addEventListener('click', () => {
-            pageFlip.flipNext();
+    // 更新页面内容
+    updatePageContent(pageIndex) {
+        if (pageIndex < 1 || pageIndex > posts.length) return;
+
+        const pageElement = this.book.querySelector(`[data-page-index="${pageIndex - 1}"]`);
+        if (pageElement && !pageElement.dataset.rendered) {
+            const post = posts[pageIndex - 1];
+            const newPage = this.createPageElement(post, pageIndex - 1);
+            requestAnimationFrame(() => {
+                pageElement.innerHTML = newPage.innerHTML;
+                pageElement.querySelectorAll('img[data-src]').forEach(this.setupLightbox);
+                pageElement.dataset.rendered = 'true';
+            });
+        }
+    },
+
+    // 设置页面翻转事件
+    setupPageFlipEvents() {
+        // 导航处理
+        this.nextBtn.addEventListener('click', () => {
+            this.pageFlip.flipNext();
         });
 
-        prevBtn.addEventListener('click', () => {
-            pageFlip.flipPrev();
+        this.prevBtn.addEventListener('click', () => {
+            this.pageFlip.flipPrev();
         });
 
-        // Keyboard navigation with event delegation
+        // 键盘导航
         document.addEventListener('keydown', (e) => {
-            // Only handle keyboard events when the book is in focus
-            if (e.key === 'ArrowRight') pageFlip.flipNext();
-            if (e.key === 'ArrowLeft') pageFlip.flipPrev();
+            if (e.key === 'ArrowRight') this.pageFlip.flipNext();
+            if (e.key === 'ArrowLeft') this.pageFlip.flipPrev();
         });
 
-        // Handle page flipping and preloading
-        pageFlip.on('flip', (e) => {
-            // e.data is the page number of the right-hand page (1-based for content pages)
+        // 页面翻转和预加载
+        this.pageFlip.on('flip', (e) => {
             const rightPageNum = e.data;
-
-            // Define a preload buffer
-            const preloadBuffer = 3; // Increased to 3 to ensure more pages are preloaded
-
-            // Ensure the pages coming into view are fully loaded
+            const preloadBuffer = 3;
             const leftPageNum = rightPageNum - 1;
             
-            // Immediately update page content without requestAnimationFrame to avoid delays
+            // 立即更新页面内容
             if (leftPageNum >= 1) {
-                const leftPageElement = book.querySelector(`[data-page-index="${leftPageNum - 1}"]`);
+                const leftPageElement = this.book.querySelector(`[data-page-index="${leftPageNum - 1}"]`);
                 if (leftPageElement && !leftPageElement.dataset.rendered) {
                     const post = posts[leftPageNum - 1];
-                    const newPage = createPageElement(post, leftPageNum - 1);
+                    const newPage = this.createPageElement(post, leftPageNum - 1);
                     leftPageElement.innerHTML = newPage.innerHTML;
-                    leftPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                    leftPageElement.querySelectorAll('img[data-src]').forEach(this.setupLightbox);
                     leftPageElement.dataset.rendered = 'true';
-                    loadImagesOnPage(leftPageElement);
+                    this.loadImagesOnPage(leftPageElement);
                 }
             }
             
             if (rightPageNum <= posts.length) {
-                const rightPageElement = book.querySelector(`[data-page-index="${rightPageNum - 1}"]`);
+                const rightPageElement = this.book.querySelector(`[data-page-index="${rightPageNum - 1}"]`);
                 if (rightPageElement && !rightPageElement.dataset.rendered) {
                     const post = posts[rightPageNum - 1];
-                    const newPage = createPageElement(post, rightPageNum - 1);
+                    const newPage = this.createPageElement(post, rightPageNum - 1);
                     rightPageElement.innerHTML = newPage.innerHTML;
-                    rightPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                    rightPageElement.querySelectorAll('img[data-src]').forEach(this.setupLightbox);
                     rightPageElement.dataset.rendered = 'true';
-                    loadImagesOnPage(rightPageElement);
+                    this.loadImagesOnPage(rightPageElement);
                 }
             }
 
-            // Preload pages ahead of the current view
+            // 预加载页面
             for (let i = 1; i <= preloadBuffer; i++) {
                 const pageToPreload = rightPageNum + i;
                 if (pageToPreload <= posts.length) {
-                    const preloadPageElement = book.querySelector(`[data-page-index="${pageToPreload - 1}"]`);
+                    const preloadPageElement = this.book.querySelector(`[data-page-index="${pageToPreload - 1}"]`);
                     if (preloadPageElement && !preloadPageElement.dataset.rendered) {
                         const post = posts[pageToPreload - 1];
-                        const newPage = createPageElement(post, pageToPreload - 1);
+                        const newPage = this.createPageElement(post, pageToPreload - 1);
                         preloadPageElement.innerHTML = newPage.innerHTML;
-                        preloadPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                        preloadPageElement.querySelectorAll('img[data-src]').forEach(this.setupLightbox);
                         preloadPageElement.dataset.rendered = 'true';
                         
-                        // Load images for preloaded pages
                         setTimeout(() => {
-                            loadImagesOnPage(preloadPageElement);
+                            this.loadImagesOnPage(preloadPageElement);
                         }, 50 * i);
                     }
                 }
             }
 
-            // Easter egg trigger on last page
-            if (e.data === pageFlip.getPageCount() - 1) {
-                 setTimeout(triggerEasterEgg, 500);
+            // 触发彩蛋
+            if (e.data === this.pageFlip.getPageCount() - 1) {
+                 setTimeout(this.triggerEasterEgg, 500);
             }
         });
+    },
 
-    }, 100);
+    // 触发彩蛋
+    triggerEasterEgg() {
+        if (this.isEasterEggPlaying) return;
+        this.isEasterEggPlaying = true;
 
-
-            // --- Easter Egg Logic: Floating Hearts ---
-            let isEasterEggPlaying = false; // Define flag variable
-            let bubbleInterval = null;
+        const message = document.getElementById('easter-egg-message');
+        const container = document.getElementById('fireworks-container');
+        
+        message.classList.remove('opacity-0');
+        container.classList.remove('opacity-0');
+        
+        const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#facc15', '#a3e635', '#fb7185'];
+        
+        const createBubble = () => {
+            const bubble = document.createElement('div');
+            const size = Math.random() * 30 + 15;
             
-            const triggerEasterEgg = () => {
-                if (isEasterEggPlaying) return;
-                isEasterEggPlaying = true;
+            bubble.classList.add('absolute', 'rounded-full', 'opacity-80', 'mix-blend-multiply');
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            bubble.style.left = `${Math.random() * 100}vw`;
+            bubble.style.bottom = '-60px';
+            
+            container.appendChild(bubble);
 
-                const message = document.getElementById('easter-egg-message');
-                const container = document.getElementById('fireworks-container');
-                
-                // Show message gently
-                message.classList.remove('opacity-0');
-                container.classList.remove('opacity-0'); // Show container background gradient
-                
-                // Gentle Floating Hearts/Bubbles - More saturated colors
-                const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#facc15', '#a3e635', '#fb7185'];
-                
-                const createBubble = () => {
-                    const bubble = document.createElement('div');
-                    const size = Math.random() * 30 + 15; // Reduced size for better performance
-                    
-                    bubble.classList.add('absolute', 'rounded-full', 'opacity-80', 'mix-blend-multiply'); // Higher opacity & blend mode
-                    bubble.style.width = `${size}px`;
-                    bubble.style.height = `${size}px`;
-                    bubble.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                    bubble.style.left = `${Math.random() * 100}vw`;
-                    bubble.style.bottom = '-60px';
-                    
-                    container.appendChild(bubble);
+            const duration = Math.random() * 3000 + 2000;
+            const sway = Math.random() * 80 - 40;
 
-                    // Keyframe Animation
-                    const duration = Math.random() * 3000 + 2000; // Reduced duration for better performance
-                    const sway = Math.random() * 80 - 40; // Reduced sway for better performance
+            const animation = bubble.animate([
+                { transform: 'translate(0, 0) scale(0.5)', opacity: 0 },
+                { transform: `translate(${sway * 0.2}px, -30vh) scale(1)`, opacity: 0.8, offset: 0.2 },
+                { transform: `translate(${sway}px, -90vh) scale(1.2)`, opacity: 0 }
+            ], {
+                duration: duration,
+                easing: 'ease-out'
+            });
 
-                    const animation = bubble.animate([
-                        { transform: 'translate(0, 0) scale(0.5)', opacity: 0 },
-                        { transform: `translate(${sway * 0.2}px, -30vh) scale(1)`, opacity: 0.8, offset: 0.2 },
-                        { transform: `translate(${sway}px, -90vh) scale(1.2)`, opacity: 0 }
-                    ], {
-                        duration: duration,
-                        easing: 'ease-out'
-                    });
-
-                    animation.onfinish = () => {
-                        if (bubble.parentNode) {
-                            bubble.parentNode.removeChild(bubble);
-                        }
-                    };
-                };
-
-                // Create bubbles loop
-                let count = 0;
-                bubbleInterval = setInterval(() => {
-                    createBubble();
-                    count++;
-                    if (count > 30) { // Reduced number of bubbles for better performance
-                        if (bubbleInterval) {
-                            clearInterval(bubbleInterval);
-                            bubbleInterval = null;
-                        }
-                        setTimeout(() => {
-                             message.classList.add('opacity-0');
-                             container.classList.add('opacity-0');
-                             isEasterEggPlaying = false; 
-                        }, 3000);
-                    }
-                }, 100); // Slower generation for better performance
+            animation.onfinish = () => {
+                if (bubble.parentNode) {
+                    bubble.parentNode.removeChild(bubble);
+                }
             };
+        };
 
-            // --- Helper: Throttle Function ---
-            const throttle = (func, limit) => {
-                let lastFunc;
-                let lastRan;
-                return function() {
-                    const context = this;
-                    const args = arguments;
-                    if (!lastRan) {
+        let count = 0;
+        this.bubbleInterval = setInterval(() => {
+            createBubble();
+            count++;
+            if (count > 30) {
+                if (this.bubbleInterval) {
+                    clearInterval(this.bubbleInterval);
+                    this.bubbleInterval = null;
+                }
+                setTimeout(() => {
+                     message.classList.add('opacity-0');
+                     container.classList.add('opacity-0');
+                     this.isEasterEggPlaying = false; 
+                }, 3000);
+            }
+        }, 100);
+    },
+
+    // 节流函数
+    throttle(func, limit) {
+        let lastFunc;
+        let lastRan;
+        return function() {
+            const context = this;
+            const args = arguments;
+            if (!lastRan) {
+                func.apply(context, args);
+                lastRan = Date.now();
+            } else {
+                clearTimeout(lastFunc);
+                lastFunc = setTimeout(function() {
+                    if ((Date.now() - lastRan) >= limit) {
                         func.apply(context, args);
                         lastRan = Date.now();
-                    } else {
-                        clearTimeout(lastFunc);
-                        lastFunc = setTimeout(function() {
-                            if ((Date.now() - lastRan) >= limit) {
-                                func.apply(context, args);
-                                lastRan = Date.now();
-                            }
-                        }, limit - (Date.now() - lastRan));
                     }
-                }
-            };
-            
-            // --- About Us Modal Logic ---
-    const aboutUsLink = document.getElementById('about-us-link');
-    const aboutUsModal = document.getElementById('about-us-modal');
-    const aboutUsClose = document.getElementById('about-us-close');
+                }, limit - (Date.now() - lastRan));
+            }
+        }
+    },
 
-    const openModal = () => {
-        aboutUsModal.classList.remove('hidden');
-        setTimeout(() => aboutUsModal.classList.add('is-visible'), 10); // Delay for transition
-    };
+    // 设置事件监听器
+    setupEventListeners() {
+        // About Us 模态框
+        const aboutUsLink = document.getElementById('about-us-link');
+        const aboutUsModal = document.getElementById('about-us-modal');
+        const aboutUsClose = document.getElementById('about-us-close');
 
-    const closeModal = () => {
-        aboutUsModal.classList.remove('is-visible');
-        setTimeout(() => aboutUsModal.classList.add('hidden'), 300); // Match CSS transition duration
-    };
+        const openModal = () => {
+            aboutUsModal.classList.remove('hidden');
+            setTimeout(() => aboutUsModal.classList.add('is-visible'), 10);
+        };
 
-    aboutUsLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        openModal();
-    });
+        const closeModal = () => {
+            aboutUsModal.classList.remove('is-visible');
+            setTimeout(() => aboutUsModal.classList.add('hidden'), 300);
+        };
 
-    aboutUsClose.addEventListener('click', closeModal);
-    aboutUsModal.addEventListener('click', (e) => {
-                if (e.target === aboutUsModal) {
-                    closeModal();
-                }
-            });
-
-            // --- Music Player Logic ---
-            // Defer music logic until first user interaction or scroll to save resources
-            const initMusic = () => {
-                const music = document.getElementById('bg-music');
-                const musicToggle = document.getElementById('music-toggle');
-                const musicIcon = musicToggle.querySelector('i');
-                let musicPlayedOnce = false; // Flag for auto-play on scroll
-                let scrollListenerAdded = false;
-
-                const handleFirstPlayOnScroll = throttle(() => {
-                    if (!musicPlayedOnce && music.paused) {
-                        music.play().then(() => {
-                            musicIcon.classList.remove('fa-play');
-                            musicIcon.classList.add('fa-pause');
-                            musicPlayedOnce = true;
-                            if (scrollListenerAdded) {
-                                window.removeEventListener('scroll', handleFirstPlayOnScroll);
-                                scrollListenerAdded = false;
-                            }
-                        }).catch(error => {
-                            // Silently fail or log for debug
-                            // console.log("Auto-play prevented by browser policy");
-                            if (scrollListenerAdded) {
-                                window.removeEventListener('scroll', handleFirstPlayOnScroll);
-                                scrollListenerAdded = false;
-                            }
-                        });
-                    }
-                }, 1000); 
-
-                // Only add scroll listener if music is available
-                if (music) {
-                    window.addEventListener('scroll', handleFirstPlayOnScroll);
-                    scrollListenerAdded = true;
-                }
-
-                musicToggle.addEventListener('click', () => {
-                    if (music.paused) {
-                        music.play().then(() => {
-                            musicIcon.classList.remove('fa-play');
-                            musicIcon.classList.add('fa-pause');
-                        }).catch(e => console.error("Play failed", e));
-                    } else {
-                        music.pause();
-                        musicIcon.classList.remove('fa-pause');
-                        musicIcon.classList.add('fa-play');
-                    }
-                    if (!musicPlayedOnce) {
-                        musicPlayedOnce = true;
-                        if (scrollListenerAdded) {
-                            window.removeEventListener('scroll', handleFirstPlayOnScroll);
-                            scrollListenerAdded = false;
-                        }
-                    }
-                });
-            };
-            
-            // Initialize music on load but execution logic is already event-driven
-            initMusic();
-
-            // --- Back to Top Logic ---
-            const backToTopButton = document.getElementById('back-to-top');
-
-            const handleBackToTopScroll = throttle(() => {
-                if (window.scrollY > 400) { // Show button after scrolling 400px
-                    backToTopButton.classList.add('is-visible');
-                    backToTopButton.classList.remove('invisible', 'opacity-0');
-                } else {
-                    backToTopButton.classList.remove('is-visible');
-                    backToTopButton.classList.add('invisible', 'opacity-0');
-                }
-            }, 200);
-
-            window.addEventListener('scroll', handleBackToTopScroll);
-
-            backToTopButton.addEventListener('click', () => {
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                });
-            });
-
-            // --- Cleanup Logic ---
-            // Add cleanup for when the page is unloaded
-            window.addEventListener('beforeunload', () => {
-                // Clear any intervals
-                if (bubbleInterval) {
-                    clearInterval(bubbleInterval);
-                }
-                // Remove event listeners to prevent memory leaks
-                window.removeEventListener('scroll', handleBackToTopScroll);
-            });
-
+        aboutUsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openModal();
         });
+
+        aboutUsClose.addEventListener('click', closeModal);
+        aboutUsModal.addEventListener('click', (e) => {
+            if (e.target === aboutUsModal) {
+                closeModal();
+            }
+        });
+    },
+
+    // 初始化音乐
+    initMusic() {
+        const music = document.getElementById('bg-music');
+        const musicToggle = document.getElementById('music-toggle');
+        const musicIcon = musicToggle.querySelector('i');
+        let musicPlayedOnce = false;
+        let scrollListenerAdded = false;
+
+        const handleFirstPlayOnScroll = this.throttle(() => {
+            if (!musicPlayedOnce && music.paused) {
+                music.play().then(() => {
+                    musicIcon.classList.remove('fa-play');
+                    musicIcon.classList.add('fa-pause');
+                    musicPlayedOnce = true;
+                    if (scrollListenerAdded) {
+                        window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                        scrollListenerAdded = false;
+                    }
+                }).catch(error => {
+                    if (scrollListenerAdded) {
+                        window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                        scrollListenerAdded = false;
+                    }
+                });
+            }
+        }, 1000); 
+
+        if (music) {
+            window.addEventListener('scroll', handleFirstPlayOnScroll);
+            scrollListenerAdded = true;
+        }
+
+        musicToggle.addEventListener('click', () => {
+            if (music.paused) {
+                music.play().then(() => {
+                    musicIcon.classList.remove('fa-play');
+                    musicIcon.classList.add('fa-pause');
+                }).catch(e => console.error("Play failed", e));
+            } else {
+                music.pause();
+                musicIcon.classList.remove('fa-pause');
+                musicIcon.classList.add('fa-play');
+            }
+            if (!musicPlayedOnce) {
+                musicPlayedOnce = true;
+                if (scrollListenerAdded) {
+                    window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                    scrollListenerAdded = false;
+                }
+            }
+        });
+    },
+
+    // 设置回到顶部
+    setupBackToTop() {
+        const backToTopButton = document.getElementById('back-to-top');
+
+        const handleBackToTopScroll = this.throttle(() => {
+            if (window.scrollY > 400) {
+                backToTopButton.classList.add('is-visible');
+                backToTopButton.classList.remove('invisible', 'opacity-0');
+            } else {
+                backToTopButton.classList.remove('is-visible');
+                backToTopButton.classList.add('invisible', 'opacity-0');
+            }
+        }, 200);
+
+        window.addEventListener('scroll', handleBackToTopScroll);
+
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+
+        this.backToTopScrollHandler = handleBackToTopScroll;
+    },
+
+    // 设置清理
+    setupCleanup() {
+        window.addEventListener('beforeunload', () => {
+            if (this.bubbleInterval) {
+                clearInterval(this.bubbleInterval);
+            }
+            if (this.backToTopScrollHandler) {
+                window.removeEventListener('scroll', this.backToTopScrollHandler);
+            }
+        });
+    }
+};
+
+// 初始化应用
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});

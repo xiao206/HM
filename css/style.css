@@ -3,8 +3,44 @@
             color: #3a3a3a;
             font-family: 'Noto Sans SC', sans-serif;
             overflow-x: hidden;
-            /* Subtle noise texture */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            /* Enhanced background with gradient and noise */
+            background: linear-gradient(135deg, #fdfaf6 0%, #f8f4ee 50%, #fdfaf6 100%);
+            background-image: 
+                linear-gradient(135deg, #fdfaf6 0%, #f8f4ee 50%, #fdfaf6 100%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            background-blend-mode: overlay;
+        }
+
+        /* Enhanced page styling */
+        .page {
+            background: linear-gradient(135deg, #fdfaf6 0%, #ffffff 100%);
+            box-shadow: 
+                inset -3px 0px 20px rgba(0,0,0,0.05),
+                0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* Improved book card styling */
+        .book-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Enhanced polaroid effect */
+        .polaroid-frame {
+            background: white;
+            box-shadow: 
+                0 4px 12px rgba(0,0,0,0.1),
+                0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .polaroid-frame:hover {
+            transform: scale(1.03) rotate(0deg) !important;
+            box-shadow: 
+                0 12px 24px rgba(0,0,0,0.15),
+                0 4px 8px rgba(0,0,0,0.1);
         }
         h1, h3 {
             font-family: 'Playfair Display', serif;
@@ -84,7 +120,66 @@
         /* Mobile specific adjustments for book */
         @media (max-width: 640px) {
             #book-container {
-               height: 80vh;
+               height: 75vh;
+            }
+            
+            /* Adjust book card padding for mobile */
+            .book-card {
+                padding: 3px 4px !important;
+            }
+            
+            /* Adjust font sizes for mobile */
+            .book-card h3 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+                padding-bottom: 0.25rem !important;
+            }
+            
+            .book-card p {
+                font-size: 0.875rem !important;
+            }
+            
+            /* Adjust polaroid frame size for mobile */
+            .polaroid-frame {
+                max-width: 90% !important;
+                padding: 0.5rem 0.5rem 1.5rem 0.5rem !important;
+            }
+            
+            /* Adjust navigation buttons for mobile */
+            #prev-btn,
+            #next-btn {
+                width: 40px;
+                height: 40px;
+                padding: 8px;
+            }
+            
+            #prev-btn i,
+            #next-btn i {
+                font-size: 1.25rem !important;
+            }
+        }
+        
+        /* Tablet adjustments */
+        @media (min-width: 641px) and (max-width: 1024px) {
+            #book-container {
+                height: 70vh;
+            }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .polaroid-frame:hover {
+                transform: scale(1) rotate(0deg) !important;
+            }
+            
+            /* Add touch feedback */
+            .polaroid-frame {
+                touch-action: manipulation;
+            }
+            
+            #prev-btn,
+            #next-btn {
+                touch-action: manipulation;
             }
         }
 
