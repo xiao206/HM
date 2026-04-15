@@ -108,9 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (count === 3 && i === 2) spanClass = 'col-span-2 w-1/2 mx-auto aspect-square';
                 else if (count === 1) spanClass = 'w-full h-full flex items-center justify-center';
 
-                // Use a placeholder for the src attribute
+                // Use a low-quality placeholder and add width/height attributes
                 return `<div class="${spanClass} overflow-hidden rounded shadow-sm relative group flex items-center justify-center ${count > 1 ? 'bg-gray-50' : ''}">
-                            <img data-src="${img}" src="" alt="${post.title}" loading="lazy" class="w-full h-full object-contain bg-gray-50 hover:scale-105 transition-transform duration-500">
+                            <img data-src="${img}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3C/svg%3E" alt="${post.title}" loading="lazy" class="w-full h-full object-contain bg-gray-50 hover:scale-105 transition-transform duration-500" width="400" height="400">
                         </div>`;
             }).join('');
 
@@ -157,14 +157,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const images = pageElement.querySelectorAll('img[data-src]');
         images.forEach(img => {
             if (img.dataset.src) {
-                img.src = img.dataset.src;
+                // Create image object for preloading
+                const imgObj = new Image();
+                imgObj.onload = () => {
+                    img.src = img.dataset.src;
+                    // Add fade-in effect
+                    img.style.opacity = '0';
+                    img.style.transition = 'opacity 0.3s ease-in-out';
+                    setTimeout(() => {
+                        img.style.opacity = '1';
+                    }, 10);
+                };
+                imgObj.src = img.dataset.src;
             }
         });
         pageElement.dataset.imagesLoaded = 'true';
     };
 
     const renderInitialBook = () => {
-        book.innerHTML = '';
+        // Use document fragment to reduce reflows
+        const fragment = document.createDocumentFragment();
 
         // --- Create Cover (Front) ---
         const coverSheet = document.createElement('div');
@@ -187,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             </div>`;
-        book.appendChild(coverSheet);
+        fragment.appendChild(coverSheet);
 
         // --- Create placeholders for all pages ---
         posts.forEach((post, index) => {
@@ -196,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             page.setAttribute('data-page-index', index);
             // Add a simple placeholder to maintain structure
             page.innerHTML = `<div class="page-content bg-[#fdfaf6]"></div>`;
-            book.appendChild(page);
+            fragment.appendChild(page);
         });
 
         // --- Create Back Cover ---
@@ -215,7 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             </div>`;
-        book.appendChild(backCover);
+        fragment.appendChild(backCover);
+
+        // Append all elements at once to minimize reflows
+        book.innerHTML = '';
+        book.appendChild(fragment);
     };
 
     renderInitialBook();
@@ -233,7 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
             maxHeight: 1200,
             maxShadowOpacity: 0.5,
             showCover: true,
-            mobileScrollSupport: false // disable mobile scroll to prevent interference
+            mobileScrollSupport: false, // disable mobile scroll to prevent interference
+            usePortrait: true,
+            drawShadow: true
         });
 
         pageFlip.loadFromHTML(document.querySelectorAll('.page'));
@@ -245,21 +263,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pageElement && !pageElement.dataset.rendered) {
                 const post = posts[pageIndex - 1];
                 const newPage = createPageElement(post, pageIndex - 1);
-                pageElement.innerHTML = newPage.innerHTML;
-                pageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
-                pageElement.dataset.rendered = 'true';
+                // Use requestAnimationFrame to minimize repaints
+                requestAnimationFrame(() => {
+                    pageElement.innerHTML = newPage.innerHTML;
+                    pageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                    pageElement.dataset.rendered = 'true';
+                });
             }
         };
 
         // Preload initial pages for a smoother experience
-        const initialPagesToLoad = 4;
+        const initialPagesToLoad = 3; // Reduced from 4 to 3 to improve initial load time
         for (let i = 1; i <= initialPagesToLoad; i++) {
             updatePageContent(i);
         }
+        
         // Load images for the first two pages that will be visible
-        loadImagesOnPage(book.querySelector('[data-page-index="0"]'));
-        loadImagesOnPage(book.querySelector('[data-page-index="1"]'));
-
+        setTimeout(() => {
+            loadImagesOnPage(book.querySelector('[data-page-index="0"]'));
+            loadImagesOnPage(book.querySelector('[data-page-index="1"]'));
+        }, 100);
 
         // --- Navigation Handlers ---
         nextBtn.addEventListener('click', () => {
@@ -270,8 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
             pageFlip.flipPrev();
         });
 
-        // Keyboard navigation
+        // Keyboard navigation with event delegation
         document.addEventListener('keydown', (e) => {
+            // Only handle keyboard events when the book is in focus
             if (e.key === 'ArrowRight') pageFlip.flipNext();
             if (e.key === 'ArrowLeft') pageFlip.flipPrev();
         });
@@ -282,20 +306,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const rightPageNum = e.data;
 
             // Define a preload buffer
-            const preloadBuffer = 2; // Preload 2 pages (1 sheet) ahead
+            const preloadBuffer = 1; // Reduced from 2 to 1 to reduce memory usage
 
             // Ensure the pages coming into view are fully loaded
             const leftPageNum = rightPageNum - 1;
             updatePageContent(leftPageNum);
             updatePageContent(rightPageNum);
-            loadImagesOnPage(book.querySelector(`[data-page-index="${leftPageNum - 1}"]`));
-            loadImagesOnPage(book.querySelector(`[data-page-index="${rightPageNum - 1}"]`));
+            
+            // Use setTimeout to avoid blocking the UI thread
+            setTimeout(() => {
+                loadImagesOnPage(book.querySelector(`[data-page-index="${leftPageNum - 1}"]`));
+                loadImagesOnPage(book.querySelector(`[data-page-index="${rightPageNum - 1}"]`));
+            }, 50);
 
             // Preload pages ahead of the current view
             for (let i = 1; i <= preloadBuffer; i++) {
                 const pageToPreload = rightPageNum + i;
                 updatePageContent(pageToPreload);
-                loadImagesOnPage(book.querySelector(`[data-page-index="${pageToPreload - 1}"]`));
+                
+                // Delay image loading to prioritize visible pages
+                setTimeout(() => {
+                    loadImagesOnPage(book.querySelector(`[data-page-index="${pageToPreload - 1}"]`));
+                }, 100 * i);
             }
 
             // Easter egg trigger on last page
@@ -309,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- Easter Egg Logic: Floating Hearts ---
             let isEasterEggPlaying = false; // Define flag variable
+            let bubbleInterval = null;
+            
             const triggerEasterEgg = () => {
                 if (isEasterEggPlaying) return;
                 isEasterEggPlaying = true;
@@ -325,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const createBubble = () => {
                     const bubble = document.createElement('div');
-                    const size = Math.random() * 40 + 20; // 20px to 60px - Bigger
+                    const size = Math.random() * 30 + 15; // Reduced size for better performance
                     
                     bubble.classList.add('absolute', 'rounded-full', 'opacity-80', 'mix-blend-multiply'); // Higher opacity & blend mode
                     bubble.style.width = `${size}px`;
@@ -334,14 +368,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     bubble.style.left = `${Math.random() * 100}vw`;
                     bubble.style.bottom = '-60px';
                     
-                    // Add a slight blur for a dreamy effect
-                    // bubble.style.filter = 'blur(1px)'; // Removed blur for clarity
-                    
                     container.appendChild(bubble);
 
                     // Keyframe Animation
-                    const duration = Math.random() * 4000 + 3000; // 3s to 7s
-                    const sway = Math.random() * 100 - 50; // -50px to 50px
+                    const duration = Math.random() * 3000 + 2000; // Reduced duration for better performance
+                    const sway = Math.random() * 80 - 40; // Reduced sway for better performance
 
                     const animation = bubble.animate([
                         { transform: 'translate(0, 0) scale(0.5)', opacity: 0 },
@@ -352,23 +383,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         easing: 'ease-out'
                     });
 
-                    animation.onfinish = () => bubble.remove();
+                    animation.onfinish = () => {
+                        if (bubble.parentNode) {
+                            bubble.parentNode.removeChild(bubble);
+                        }
+                    };
                 };
 
                 // Create bubbles loop
                 let count = 0;
-                const interval = setInterval(() => {
+                bubbleInterval = setInterval(() => {
                     createBubble();
                     count++;
-                    if (count > 40) { // More bubbles
-                        clearInterval(interval);
+                    if (count > 30) { // Reduced number of bubbles for better performance
+                        if (bubbleInterval) {
+                            clearInterval(bubbleInterval);
+                            bubbleInterval = null;
+                        }
                         setTimeout(() => {
                              message.classList.add('opacity-0');
                              container.classList.add('opacity-0');
                              isEasterEggPlaying = false; 
-                        }, 4000);
+                        }, 3000);
                     }
-                }, 80); // Faster generation
+                }, 100); // Slower generation for better performance
             };
 
             // --- Helper: Throttle Function ---
@@ -392,8 +430,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             };
-            
-            // Removed masonry scroll handler as it's not needed for the book
             
             // --- About Us Modal Logic ---
     const aboutUsLink = document.getElementById('about-us-link');
@@ -429,6 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const musicToggle = document.getElementById('music-toggle');
                 const musicIcon = musicToggle.querySelector('i');
                 let musicPlayedOnce = false; // Flag for auto-play on scroll
+                let scrollListenerAdded = false;
 
                 const handleFirstPlayOnScroll = throttle(() => {
                     if (!musicPlayedOnce && music.paused) {
@@ -436,16 +473,26 @@ document.addEventListener('DOMContentLoaded', () => {
                             musicIcon.classList.remove('fa-play');
                             musicIcon.classList.add('fa-pause');
                             musicPlayedOnce = true;
-                            window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                            if (scrollListenerAdded) {
+                                window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                                scrollListenerAdded = false;
+                            }
                         }).catch(error => {
                             // Silently fail or log for debug
                             // console.log("Auto-play prevented by browser policy");
-                            window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                            if (scrollListenerAdded) {
+                                window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                                scrollListenerAdded = false;
+                            }
                         });
                     }
                 }, 1000); 
 
-                window.addEventListener('scroll', handleFirstPlayOnScroll);
+                // Only add scroll listener if music is available
+                if (music) {
+                    window.addEventListener('scroll', handleFirstPlayOnScroll);
+                    scrollListenerAdded = true;
+                }
 
                 musicToggle.addEventListener('click', () => {
                     if (music.paused) {
@@ -460,7 +507,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (!musicPlayedOnce) {
                         musicPlayedOnce = true;
-                        window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                        if (scrollListenerAdded) {
+                            window.removeEventListener('scroll', handleFirstPlayOnScroll);
+                            scrollListenerAdded = false;
+                        }
                     }
                 });
             };
@@ -488,6 +538,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     top: 0,
                     behavior: 'smooth'
                 });
+            });
+
+            // --- Cleanup Logic ---
+            // Add cleanup for when the page is unloaded
+            window.addEventListener('beforeunload', () => {
+                // Clear any intervals
+                if (bubbleInterval) {
+                    clearInterval(bubbleInterval);
+                }
+                // Remove event listeners to prevent memory leaks
+                window.removeEventListener('scroll', handleBackToTopScroll);
             });
 
         });

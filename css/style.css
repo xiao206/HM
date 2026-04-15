@@ -13,12 +13,14 @@
         /* Book Styles - StPageFlip */
         #book-container {
             /* Handled by Tailwind now for flex centering */
+            perspective: 1000px; /* Add perspective for better 3D effect */
         }
 
         /* The book element itself */
         #book {
             box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); /* Enhanced shadow */
             will-change: transform; /* Hardware acceleration hint */
+            transform: translateZ(0); /* Force hardware acceleration */
         }
 
         /* Page Styles */
@@ -30,6 +32,20 @@
             /* Subtle paper texture */
             background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 10%, rgba(255,255,255,0) 100%);
             will-change: transform; /* Hardware acceleration hint */
+            transform: translateZ(0); /* Force hardware acceleration */
+            backface-visibility: hidden; /* Improve performance for 3D transforms */
+        }
+
+        /* Optimize animations for performance */
+        * {
+            backface-visibility: hidden;
+            perspective: 1000px;
+        }
+
+        /* Smooth transitions */
+        .page-content, .book-card, .polaroid-frame {
+            transform: translateZ(0);
+            will-change: transform;
         }
 
         .page-content {
