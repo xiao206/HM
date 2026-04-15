@@ -1,0 +1,149 @@
+        body {
+            background-color: #fdfaf6;
+            color: #3a3a3a;
+            font-family: 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+            /* Subtle noise texture */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+        h1, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Book Styles - StPageFlip */
+        #book-container {
+            /* Handled by Tailwind now for flex centering */
+        }
+
+        /* The book element itself */
+        #book {
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); /* Enhanced shadow */
+            will-change: transform; /* Hardware acceleration hint */
+        }
+
+        /* Page Styles */
+        .page {
+            background-color: #fdfaf6;
+            box-shadow: inset -3px 0px 20px rgba(0,0,0,0.05); /* Spine shadow */
+            border-left: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            /* Subtle paper texture */
+            background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 10%, rgba(255,255,255,0) 100%);
+            will-change: transform; /* Hardware acceleration hint */
+        }
+
+        .page-content {
+            /* Content wrapper inside the page */
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Hard Cover Styles */
+        .page-cover {
+            background-color: #fdfaf6;
+            border: 1px solid #e5e7eb;
+            box-shadow: inset 4px 0 10px rgba(0,0,0,0.1); /* Hard cover spine effect */
+        }
+
+        .page-cover-top {
+             border-radius: 4px 0 0 4px;
+        }
+        
+        .page-cover-bottom {
+             border-radius: 0 4px 4px 0;
+        }
+
+        /* Scrollbar for long content in pages */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 20px;
+        }
+
+        /* Mobile specific adjustments for book */
+        @media (max-width: 640px) {
+            #book-container {
+               height: 80vh;
+            }
+        }
+
+        /* Mobile Optimizations */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Card Animation Styles - Adapted for Book */
+        .book-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Polaroid Styles */
+        .polaroid-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+            margin-bottom: 2rem;
+        }
+        .polaroid-frame {
+            background-color: white;
+            padding: 0.75rem 0.75rem 2.5rem 0.75rem; /* Bottom padding for date */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            transform: rotate(-2deg); /* Default rotation */
+        }
+        .polaroid-frame:nth-child(even) {
+            transform: rotate(2deg);
+        }
+        .polaroid-frame:hover {
+            transform: scale(1.02) rotate(0deg) !important; /* Slightly reduced scale for smoother effect */
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .polaroid-frame img {
+            /* Handled by inline styles / Tailwind classes now */
+        }
+        .polaroid-date {
+                    position: absolute;
+                    bottom: 0.5rem;
+                    left: 0.75rem;
+                    right: 0.75rem;
+                    text-align: center;
+                    font-family: 'Caveat', cursive; /* A handwriting font */
+                    font-size: 0.9rem;
+                    color: #555;
+                }
+
+                /* About Us Modal Animation */
+                #about-us-modal.is-visible > div {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+
+/* Loading Overlay */
+#loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+        #back-to-top {
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        #back-to-top.is-visible {
+            opacity: 1;
+            visibility: visible;
+        }
