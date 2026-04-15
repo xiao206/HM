@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 3000);
 
-    // Sort posts by date, oldest first
-    posts.sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Sort posts by date, newest first
+    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     const book = document.getElementById('book');
     const prevBtn = document.getElementById('prev-btn');
