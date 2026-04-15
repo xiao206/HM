@@ -273,16 +273,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Preload initial pages for a smoother experience
-        const initialPagesToLoad = 3; // Reduced from 4 to 3 to improve initial load time
+        const initialPagesToLoad = 5; // Increased to 5 to ensure more pages are preloaded
         for (let i = 1; i <= initialPagesToLoad; i++) {
             updatePageContent(i);
         }
         
-        // Load images for the first two pages that will be visible
+        // Load images for the first three pages that will be visible
         setTimeout(() => {
             loadImagesOnPage(book.querySelector('[data-page-index="0"]'));
             loadImagesOnPage(book.querySelector('[data-page-index="1"]'));
-        }, 100);
+            loadImagesOnPage(book.querySelector('[data-page-index="2"]'));
+        }, 50);
 
         // --- Navigation Handlers ---
         nextBtn.addEventListener('click', () => {
@@ -306,28 +307,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const rightPageNum = e.data;
 
             // Define a preload buffer
-            const preloadBuffer = 1; // Reduced from 2 to 1 to reduce memory usage
+            const preloadBuffer = 3; // Increased to 3 to ensure more pages are preloaded
 
             // Ensure the pages coming into view are fully loaded
             const leftPageNum = rightPageNum - 1;
-            updatePageContent(leftPageNum);
-            updatePageContent(rightPageNum);
             
-            // Use setTimeout to avoid blocking the UI thread
-            setTimeout(() => {
-                loadImagesOnPage(book.querySelector(`[data-page-index="${leftPageNum - 1}"]`));
-                loadImagesOnPage(book.querySelector(`[data-page-index="${rightPageNum - 1}"]`));
-            }, 50);
+            // Immediately update page content without requestAnimationFrame to avoid delays
+            if (leftPageNum >= 1) {
+                const leftPageElement = book.querySelector(`[data-page-index="${leftPageNum - 1}"]`);
+                if (leftPageElement && !leftPageElement.dataset.rendered) {
+                    const post = posts[leftPageNum - 1];
+                    const newPage = createPageElement(post, leftPageNum - 1);
+                    leftPageElement.innerHTML = newPage.innerHTML;
+                    leftPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                    leftPageElement.dataset.rendered = 'true';
+                    loadImagesOnPage(leftPageElement);
+                }
+            }
+            
+            if (rightPageNum <= posts.length) {
+                const rightPageElement = book.querySelector(`[data-page-index="${rightPageNum - 1}"]`);
+                if (rightPageElement && !rightPageElement.dataset.rendered) {
+                    const post = posts[rightPageNum - 1];
+                    const newPage = createPageElement(post, rightPageNum - 1);
+                    rightPageElement.innerHTML = newPage.innerHTML;
+                    rightPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                    rightPageElement.dataset.rendered = 'true';
+                    loadImagesOnPage(rightPageElement);
+                }
+            }
 
             // Preload pages ahead of the current view
             for (let i = 1; i <= preloadBuffer; i++) {
                 const pageToPreload = rightPageNum + i;
-                updatePageContent(pageToPreload);
-                
-                // Delay image loading to prioritize visible pages
-                setTimeout(() => {
-                    loadImagesOnPage(book.querySelector(`[data-page-index="${pageToPreload - 1}"]`));
-                }, 100 * i);
+                if (pageToPreload <= posts.length) {
+                    const preloadPageElement = book.querySelector(`[data-page-index="${pageToPreload - 1}"]`);
+                    if (preloadPageElement && !preloadPageElement.dataset.rendered) {
+                        const post = posts[pageToPreload - 1];
+                        const newPage = createPageElement(post, pageToPreload - 1);
+                        preloadPageElement.innerHTML = newPage.innerHTML;
+                        preloadPageElement.querySelectorAll('img[data-src]').forEach(setupLightbox);
+                        preloadPageElement.dataset.rendered = 'true';
+                        
+                        // Load images for preloaded pages
+                        setTimeout(() => {
+                            loadImagesOnPage(preloadPageElement);
+                        }, 50 * i);
+                    }
+                }
             }
 
             // Easter egg trigger on last page
