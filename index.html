@@ -1,109 +1,26 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>缺牙巴们的那些事</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat&family=Playfair+Display:wght@700&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet">
-            <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body class="bg-gray-100 text-gray-800">
-
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8 flex flex-col min-h-screen gap-12">
-        
-        <div id="book-container" class="relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[60vh] sm:h-[650px] z-0 flex-grow">
-            <div id="book" class="shadow-2xl">
-                <!-- 封面和内页将由JS动态生成 -->
-            </div>
-            
-            <!-- 翻页控制按钮 -->
-            <button id="prev-btn" class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0 sm:-translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm">
-                <i class="fas fa-chevron-left text-2xl sm:text-4xl"></i>
-            </button>
-            <button id="next-btn" class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0 sm:translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm">
-                <i class="fas fa-chevron-right text-2xl sm:text-4xl"></i>
-            </button>
-        </div>
-
-        <footer class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full">
-                    <p class="text-gray-500 mb-2 text-xs sm:text-sm">&copy; 2024 缺牙巴们的那些事. All Rights Reserved.</p>
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-2 mb-2">
-                        <p class="text-gray-500 text-xs sm:text-sm">
-                            <a href="https://beian.miit.gov.cn/" target="_blank" class="hover:text-gray-900 transition">湘ICP备2025132035号-2</a>
-                        </p>
-                        <p class="text-gray-500 text-xs sm:text-sm">
-                            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=43018102000677" rel="noreferrer" target="_blank" class="hover:text-gray-900 transition flex items-center gap-1">
-                                <img src="images/备案图标.png" alt="备案图标" class="w-4 h-4">
-                                湘公网安备43018102000677号
-                            </a>
-                        </p>
-                    </div>
-                    <a href="#" id="about-us-link" class="text-xs sm:text-sm text-gray-600 hover:text-gray-900 transition">关于我们</a>
-                </footer>
-
-            </div>
-
-            <!-- About Us Modal -->
-            <div id="about-us-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
-                <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full p-6 sm:p-8 relative transform transition-all duration-300 ease-in-out scale-95 opacity-0 max-h-[90vh] overflow-y-auto">
-                    <button id="about-us-close" class="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold p-2">&times;</button>
-                    <h2 class="text-2xl sm:text-3xl font-bold text-center mb-4" style="font-family: 'Playfair Display', serif;">关于「缺牙齿的缺牙巴们」</h2>
-                    <div class="text-center mb-6">
-                        <img src="images/25/03021.webp" alt="Group Photo" class="w-32 h-32 sm:w-48 sm:h-48 object-cover rounded-full mx-auto shadow-lg border-4 border-white">
-                    </div>
-                    <p class="text-gray-700 leading-relaxed text-center text-sm sm:text-base">
-                        这里是记录我们这群“缺牙巴”们共同经历的数字角落。
-                        <br><br>
-                        天下无有不散筵席，就合上一千年，少不得有个分开日子。
-                        <br><br>
-                        愿世间有颗无忧树，愿你我永远是同路。
-                    </p>
-                </div>
-            </div>
-
-            <script src="js/data.js" defer></script>
-    <script src="js/page-flip.browser.js" defer></script>
-    <script src="js/scripts.js" defer></script>
-
-    <!-- Image Lightbox Modal -->
-    <div id="lightbox" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center hidden z-[60] p-4 transition-opacity duration-300">
-        <img id="lightbox-img" src="" alt="Enlarged image" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]">
-        <button id="lightbox-close" class="absolute top-4 right-6 text-white text-4xl font-bold hover:text-gray-300 transition-colors z-[62] cursor-pointer" aria-label="Close Lightbox">&times;</button>
-        <div id="lightbox-caption" class="absolute bottom-6 left-0 right-0 text-center text-white text-lg font-medium bg-black bg-opacity-50 py-2 z-[61]"></div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900 mb-4"></div>
-        <p class="text-gray-600 font-medium animate-pulse">正在加载美好回忆...</p>
-    </div>
-
-    <!-- Easter Egg: Fireworks Container -->
-    <div id="fireworks-container" class="fixed inset-0 pointer-events-none z-40 overflow-hidden bg-gradient-to-t from-white/90 via-white/50 to-transparent opacity-0 transition-opacity duration-1000"></div>
-    <!-- Easter Egg: Hidden Message -->
-    <div id="easter-egg-message" class="fixed bottom-32 sm:bottom-32 left-0 right-0 text-center text-3xl sm:text-5xl font-normal text-gray-800 opacity-0 transition-opacity duration-1000 z-50 pointer-events-none drop-shadow-lg px-4" style="font-family: 'Playfair Display', serif; letter-spacing: 0.1em; text-shadow: 0 4px 6px rgba(255,255,255,0.8);">
-        To be continued...<br>
-        <span class="text-lg sm:text-2xl mt-4 block font-sans text-gray-600 font-medium tracking-widest">我们的故事，未完待续</span>
-    </div>
-
-    <!-- Background Music Player -->
-            <audio id="bg-music" loop>
-                <source src="yesterday.mp3" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio>
-            <button id="music-toggle" class="fixed bottom-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40">
-                <i class="fas fa-play"></i>
-            </button>
-
-            <!-- Back to Top Button -->
-            <button id="back-to-top" class="fixed bottom-6 right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40 opacity-0 invisible">
-                <i class="fas fa-arrow-up"></i>
-            </button>
-
-</body>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caveat&family=Playfair+Display:wght@700&family=Noto+Sans+SC:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body class="bg-gray-100 text-gray-800">
+    <div id="app"></div>
+    <script src="/js/page-flip.browser.js"></script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
