@@ -11,6 +11,7 @@ const placeholderSrc =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3C/svg%3E"
 
 const bookRef = ref(null)
+const bookContainerRef = ref(null)
 const lightboxOpen = ref(false)
 const lightboxSrc = ref('')
 const lightboxCaption = ref('')
@@ -20,6 +21,7 @@ const aboutModalOpen = ref(false)
 const aboutModalVisible = ref(false)
 const backToTopVisible = ref(false)
 const musicPlaying = ref(false)
+const immersiveActive = ref(false)
 
 const audioRef = ref(null)
 const fireworksContainerRef = ref(null)
@@ -31,6 +33,7 @@ let easterEggPlaying = false
 let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
 let keydownHandler = null
+let fullscreenChangeHandler = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -222,6 +225,45 @@ function backToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+async function enterImmersive() {
+  immersiveActive.value = true
+  document.documentElement.classList.add('overflow-hidden')
+
+  const el = bookContainerRef.value
+  if (el && document.fullscreenEnabled && !document.fullscreenElement) {
+    try {
+      await el.requestFullscreen({ navigationUI: 'hide' })
+    } catch (_) {}
+  }
+
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, 100)
+}
+
+async function exitImmersive() {
+  immersiveActive.value = false
+  document.documentElement.classList.remove('overflow-hidden')
+
+  if (document.fullscreenElement) {
+    try {
+      await document.exitFullscreen()
+    } catch (_) {}
+  }
+
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, 100)
+}
+
+function toggleImmersive() {
+  if (immersiveActive.value) {
+    exitImmersive()
+  } else {
+    enterImmersive()
+  }
+}
+
 function initLoadingOverlay() {
   window.addEventListener('load', () => {
     loadingHidden.value = true
@@ -352,6 +394,9 @@ function cleanup() {
 
   if (keydownHandler) document.removeEventListener('keydown', keydownHandler)
   keydownHandler = null
+
+  if (fullscreenChangeHandler) document.removeEventListener('fullscreenchange', fullscreenChangeHandler)
+  fullscreenChangeHandler = null
 }
 
 onMounted(async () => {
@@ -361,6 +406,17 @@ onMounted(async () => {
   initKeyboardNavigation()
   initMusicAutoPlayOnScroll()
   initBackToTop()
+
+  fullscreenChangeHandler = () => {
+    if (!document.fullscreenElement && immersiveActive.value) {
+      immersiveActive.value = false
+      document.documentElement.classList.remove('overflow-hidden')
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'))
+      }, 100)
+    }
+  }
+  document.addEventListener('fullscreenchange', fullscreenChangeHandler)
 })
 
 onBeforeUnmount(() => {
@@ -369,10 +425,21 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="container mx-auto p-4 sm:p-6 lg:p-8 flex flex-col min-h-screen gap-12">
+  <div
+    :class="
+      immersiveActive
+        ? 'w-full h-[100svh] flex flex-col'
+        : 'container mx-auto p-4 sm:p-6 lg:p-8 flex flex-col min-h-screen gap-12'
+    "
+  >
     <div
       id="book-container"
-      class="relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[60vh] sm:h-[650px] z-0 flex-grow"
+      ref="bookContainerRef"
+      :class="
+        immersiveActive
+          ? 'fixed inset-0 flex justify-center items-center w-full max-w-none h-[100svh] z-[70] bg-gray-100'
+          : 'relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[60vh] sm:h-[650px] z-0 flex-grow'
+      "
     >
       <div id="book" ref="bookRef" class="shadow-2xl">
         <div class="page page-cover page-cover-top" data-density="hard">
@@ -529,7 +596,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <footer class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full">
+    <footer v-if="!immersiveActive" class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full">
       <p class="text-gray-500 mb-2 text-xs sm:text-sm">&copy; 2024 缺牙巴们的那些事. All Rights Reserved.</p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-2 mb-2">
         <p class="text-gray-500 text-xs sm:text-sm">
@@ -552,6 +619,14 @@ onBeforeUnmount(() => {
       >
     </footer>
   </div>
+
+  <button
+    class="fixed bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
+    :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
+    @click="toggleImmersive"
+  >
+    <i :class="immersiveActive ? 'fas fa-compress' : 'fas fa-book-open'"></i>
+  </button>
 
   <div
     v-show="aboutModalOpen"
