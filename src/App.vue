@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import postsData from './data/posts'
 
 const posts = postsData
@@ -34,7 +34,6 @@ let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
 let keydownHandler = null
 let fullscreenChangeHandler = null
-let windowResizeHandler = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -226,35 +225,6 @@ function backToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function updatePageFlipSize() {
-  if (!pageFlip || !bookContainerRef.value) return
-
-  const rect = bookContainerRef.value.getBoundingClientRect()
-  if (!rect.width || !rect.height) return
-
-  const s = pageFlip.getSettings()
-
-  if (immersiveActive.value) {
-    const width = Math.max(1, Math.floor(rect.width))
-    const height = Math.max(1, Math.floor(rect.height))
-    s.width = width
-    s.height = height
-    s.minWidth = width
-    s.maxWidth = width
-    s.minHeight = height
-    s.maxHeight = height
-  } else {
-    s.width = 400
-    s.height = 600
-    s.minWidth = 300
-    s.maxWidth = 1000
-    s.minHeight = 400
-    s.maxHeight = 1200
-  }
-
-  pageFlip.update()
-}
-
 async function enterImmersive() {
   immersiveActive.value = true
   document.documentElement.classList.add('overflow-hidden')
@@ -268,7 +238,6 @@ async function enterImmersive() {
 
   setTimeout(() => {
     window.dispatchEvent(new Event('resize'))
-    updatePageFlipSize()
   }, 100)
 }
 
@@ -284,7 +253,6 @@ async function exitImmersive() {
 
   setTimeout(() => {
     window.dispatchEvent(new Event('resize'))
-    updatePageFlipSize()
   }, 100)
 }
 
@@ -402,8 +370,6 @@ function initPageFlip() {
         setTimeout(triggerEasterEgg, 500)
       }
     })
-
-    updatePageFlipSize()
   }, 100)
 }
 
@@ -431,12 +397,6 @@ function cleanup() {
 
   if (fullscreenChangeHandler) document.removeEventListener('fullscreenchange', fullscreenChangeHandler)
   fullscreenChangeHandler = null
-
-  if (windowResizeHandler) {
-    window.removeEventListener('resize', windowResizeHandler)
-    window.removeEventListener('orientationchange', windowResizeHandler)
-  }
-  windowResizeHandler = null
 }
 
 onMounted(async () => {
@@ -457,19 +417,6 @@ onMounted(async () => {
     }
   }
   document.addEventListener('fullscreenchange', fullscreenChangeHandler)
-
-  windowResizeHandler = throttle(() => {
-    updatePageFlipSize()
-  }, 200)
-  window.addEventListener('resize', windowResizeHandler)
-  window.addEventListener('orientationchange', windowResizeHandler)
-
-  watch(immersiveActive, async () => {
-    await nextTick()
-    setTimeout(() => {
-      updatePageFlipSize()
-    }, 100)
-  })
 })
 
 onBeforeUnmount(() => {
@@ -490,7 +437,7 @@ onBeforeUnmount(() => {
       ref="bookContainerRef"
       :class="
         immersiveActive
-          ? 'fixed inset-0 flex justify-center items-center w-full max-w-none h-[100svh] z-0 bg-gray-100'
+          ? 'fixed inset-0 flex justify-center items-center w-full max-w-none h-[100svh] z-[70] bg-gray-100'
           : 'relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[60vh] sm:h-[650px] z-0 flex-grow'
       "
     >
