@@ -48,6 +48,8 @@ let tapToFlipInput = null
 let zoom = null
 let zoomCaptionEl = null
 let zoomCloseEl = null
+let preloadChain = Promise.resolve()
+let preloadTimers = []
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -76,6 +78,26 @@ function throttle(func, limit) {
       )
     }
   }
+}
+
+function runWhenIdle(fn, timeout) {
+  const ric = window.requestIdleCallback
+  if (typeof ric === 'function') return ric(fn, { timeout })
+  const handle = window.setTimeout(() => fn({ didTimeout: true, timeRemaining: () => 0 }), Math.min(timeout, 200))
+  return handle
+}
+
+function enqueuePreload(pageEl) {
+  if (!pageEl) return
+  preloadChain = preloadChain.then(
+    () =>
+      new Promise((resolve) => {
+        runWhenIdle(() => {
+          loadImagesOnPage(pageEl)
+          resolve()
+        }, 1500)
+      }),
+  )
 }
 
 function getGridClass(count) {
@@ -534,14 +556,14 @@ function initPageFlip() {
       height: 600,
       size: 'stretch',
       minWidth: 300,
-      maxWidth: 1000,
+      maxWidth: 900,
       minHeight: 400,
-      maxHeight: 1200,
-      maxShadowOpacity: 0.5,
+      maxHeight: 1100,
+      maxShadowOpacity: 0.25,
       showCover: true,
       mobileScrollSupport: false,
       usePortrait: true,
-      drawShadow: true,
+      drawShadow: false,
     })
 
     pageFlip.loadFromHTML(bookEl.querySelectorAll('.page'))
@@ -553,16 +575,16 @@ function initPageFlip() {
 
     pageFlip.on('flip', (e) => {
       const rightPageNum = e.data
-      const preloadBuffer = 3
+      const preloadBuffer = 2
       const leftPageNum = rightPageNum - 1
 
       if (leftPageNum >= 1) {
         const leftPageEl = bookEl.querySelector(`[data-page-index="${leftPageNum - 1}"]`)
-        if (leftPageEl) loadImagesOnPage(leftPageEl)
+        if (leftPageEl) preloadTimers.push(window.setTimeout(() => loadImagesOnPage(leftPageEl), 180))
       }
       if (rightPageNum <= posts.length) {
         const rightPageEl = bookEl.querySelector(`[data-page-index="${rightPageNum - 1}"]`)
-        if (rightPageEl) loadImagesOnPage(rightPageEl)
+        if (rightPageEl) preloadTimers.push(window.setTimeout(() => loadImagesOnPage(rightPageEl), 180))
       }
 
       for (let i = 1; i <= preloadBuffer; i += 1) {
@@ -570,9 +592,7 @@ function initPageFlip() {
         if (pageToPreload <= posts.length) {
           const preloadPageEl = bookEl.querySelector(`[data-page-index="${pageToPreload - 1}"]`)
           if (preloadPageEl) {
-            setTimeout(() => {
-              loadImagesOnPage(preloadPageEl)
-            }, 50 * i)
+            enqueuePreload(preloadPageEl)
           }
         }
       }
@@ -643,6 +663,10 @@ function cleanup() {
   zoomCaptionEl = null
   if (zoomCloseEl) zoomCloseEl.remove()
   zoomCloseEl = null
+
+  if (preloadTimers.length) preloadTimers.forEach((t) => window.clearTimeout(t))
+  preloadTimers = []
+  preloadChain = Promise.resolve()
 }
 
 onMounted(async () => {
@@ -786,6 +810,7 @@ onBeforeUnmount(() => {
                           :data-zoom-caption="post.title"
                           :src="placeholderSrc"
                           :alt="post.title"
+                          decoding="async"
                           loading="lazy"
                           class="w-full h-full object-contain bg-gray-50 hover:scale-105 transition-transform duration-500 cursor-pointer"
                           width="400"
