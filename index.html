@@ -17,6 +17,23 @@
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/css/style.css" />
+    <script>
+      (function () {
+        var originalFetch = window.fetch
+        if (!originalFetch) return
+        window.fetch = function (input, init) {
+          try {
+            if (typeof input === 'string' && input.indexOf('/yesterday.lrc') === 0) {
+              var u = new URL(input, window.location.href)
+              u.searchParams.set('v', String(Date.now()))
+              input = u.pathname + u.search
+              init = Object.assign({}, init, { cache: 'no-store' })
+            }
+          } catch (_) {}
+          return originalFetch(input, init)
+        }
+      })()
+    </script>
   </head>
   <body class="bg-gray-100 text-gray-800">
     <div id="app"></div>
