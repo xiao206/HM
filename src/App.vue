@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import postsData from './data/posts'
 
 const posts = postsData
@@ -13,7 +13,6 @@ const placeholderSrc =
 const bookRef = ref(null)
 const bookContainerRef = ref(null)
 const footerRef = ref(null)
-const lightboxRef = ref(null)
 const lightboxOpen = ref(false)
 const lightboxSrc = ref('')
 const lightboxCaption = ref('')
@@ -48,7 +47,6 @@ let tapToFlipTouchEndHandler = null
 let tapToFlipTouchCancelHandler = null
 let tapToFlipStart = null
 let tapToFlipInput = null
-let lightboxKeydownHandler = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -116,15 +114,6 @@ function openLightbox(src, caption) {
   lightboxOpen.value = true
   ensureMusicPlaying()
 }
-
-watch(
-  () => lightboxOpen.value,
-  async (open) => {
-    if (!open) return
-    await nextTick()
-    if (lightboxRef.value && lightboxRef.value.focus) lightboxRef.value.focus({ preventScroll: true })
-  },
-)
 
 function loadImagesOnPage(pageElement) {
   if (!pageElement || pageElement.dataset.imagesLoaded === 'true') return
@@ -624,9 +613,6 @@ function cleanup() {
   tapToFlipTouchCancelHandler = null
   tapToFlipStart = null
   tapToFlipInput = null
-
-  if (lightboxKeydownHandler) window.removeEventListener('keydown', lightboxKeydownHandler, { capture: true })
-  lightboxKeydownHandler = null
 }
 
 onMounted(async () => {
@@ -638,28 +624,6 @@ onMounted(async () => {
   initBackToTop()
   initFabPosition()
   initTapToFlip()
-
-  lightboxKeydownHandler = (e) => {
-    if (!lightboxOpen.value) return
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      closeLightbox()
-      return
-    }
-    if (
-      e.key === 'ArrowUp' ||
-      e.key === 'ArrowDown' ||
-      e.key === 'PageUp' ||
-      e.key === 'PageDown' ||
-      e.key === 'Home' ||
-      e.key === 'End' ||
-      e.key === ' ' ||
-      e.key === 'Spacebar'
-    ) {
-      e.preventDefault()
-    }
-  }
-  window.addEventListener('keydown', lightboxKeydownHandler, { capture: true })
 
   fullscreenChangeHandler = () => {
     if (!document.fullscreenElement && immersiveActive.value) {
@@ -910,19 +874,15 @@ onBeforeUnmount(() => {
   <div
     v-show="lightboxOpen"
     id="lightbox"
-    ref="lightboxRef"
-    tabindex="-1"
-    class="fixed inset-0 w-screen h-screen h-[100dvh] bg-black bg-opacity-90 flex items-center justify-center z-[60] px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] pt-[calc(1rem_+_env(safe-area-inset-top))] transition-opacity duration-300 overflow-hidden overscroll-contain"
+    class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4 transition-opacity duration-300"
     @click.self="closeLightbox"
-    @wheel.prevent
-    @touchmove.prevent
   >
-    <div class="relative max-w-full max-h-full">
+    <div class="relative max-w-full max-h-[90vh]">
       <img
         id="lightbox-img"
         :src="lightboxSrc"
         alt="Enlarged image"
-        class="block max-w-full max-h-full rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
+        class="block max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
       />
       <button
         id="lightbox-close"
