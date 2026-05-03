@@ -438,7 +438,7 @@ onBeforeUnmount(() => {
       :class="
         immersiveActive
           ? 'fixed inset-0 flex justify-center items-center w-full max-w-none h-[100svh] z-[70] bg-gray-100'
-          : 'relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[60vh] sm:h-[650px] z-0 flex-grow'
+          : 'relative mx-auto my-auto flex justify-center items-center w-full max-w-5xl h-[72vh] sm:h-[650px] z-0 flex-grow'
       "
     >
       <div id="book" ref="bookRef" class="shadow-2xl">
@@ -539,7 +539,7 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="flex-grow overflow-y-auto my-4 scrollbar-thin scrollbar-thumb-stone-300 pr-2">
-                <p class="text-gray-700 text-base sm:text-lg leading-relaxed text-justify indent-8 font-serif">
+                <p class="book-body text-gray-700 text-base sm:text-lg leading-relaxed text-justify font-serif">
                   {{ post.content }}
                 </p>
               </div>
@@ -621,6 +621,7 @@ onBeforeUnmount(() => {
   </div>
 
   <button
+    id="immersive-toggle"
     class="fixed bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
     :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
     @click="toggleImmersive"
