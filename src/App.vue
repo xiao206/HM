@@ -905,33 +905,29 @@ onBeforeUnmount(() => {
   <div
     v-show="lightboxOpen"
     id="lightbox"
-    class="fixed inset-0 h-[100svh] bg-black bg-opacity-90 flex items-center justify-center z-[60] px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] pt-[calc(1rem_+_env(safe-area-inset-top))] transition-opacity duration-300 overflow-hidden overscroll-contain"
+    class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4 transition-opacity duration-300"
     @click.self="closeLightbox"
-    @wheel.prevent
-    @touchmove.prevent
   >
-    <div class="w-full h-[calc(100svh_-_2rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] flex items-center justify-center">
-      <div class="relative max-w-full max-h-full">
-        <img
-          id="lightbox-img"
-          :src="lightboxSrc"
-          alt="Enlarged image"
-          class="block max-w-full max-h-full rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
-        />
-        <button
-          id="lightbox-close"
-          class="absolute top-2 right-2 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[62]"
-          aria-label="Close Lightbox"
-          @click.stop="closeLightbox"
-        >
-          &times;
-        </button>
-        <div
-          id="lightbox-caption"
-          class="absolute bottom-0 left-0 right-0 text-center text-white text-lg font-medium bg-black/50 py-2 z-[61] rounded-b-lg"
-        >
-          {{ lightboxCaption }}
-        </div>
+    <div class="relative max-w-full max-h-[90vh]">
+      <img
+        id="lightbox-img"
+        :src="lightboxSrc"
+        alt="Enlarged image"
+        class="block max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
+      />
+      <button
+        id="lightbox-close"
+        class="absolute top-2 right-2 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[62]"
+        aria-label="Close Lightbox"
+        @click.stop="closeLightbox"
+      >
+        &times;
+      </button>
+      <div
+        id="lightbox-caption"
+        class="absolute bottom-0 left-0 right-0 text-center text-white text-lg font-medium bg-black/50 py-2 z-[61] rounded-b-lg"
+      >
+        {{ lightboxCaption }}
       </div>
     </div>
   </div>
