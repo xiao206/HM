@@ -27,6 +27,9 @@ const fabBottom = ref(24)
 const audioRef = ref(null)
 const fireworksContainerRef = ref(null)
 const easterEggMessageRef = ref(null)
+const lyricLine = ref('')
+const nextLyricLine = ref('')
+const lyricReady = ref(false)
 
 let pageFlip = null
 let bubbleInterval = null
@@ -52,6 +55,11 @@ let zoomCloseEl = null
 let zoomCaptionPositionHandler = null
 let preloadChain = Promise.resolve()
 let preloadTimers = []
+let lrcLines = []
+let lyricRaf = null
+let lyricTimeUpdateHandler = null
+let lyricSeekedHandler = null
+let lyricPlayHandler = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -100,6 +108,73 @@ function enqueuePreload(pageEl) {
         }, 1500)
       }),
   )
+}
+
+function parseLrc(text) {
+  const lines = []
+  const rows = String(text || '').split(/\r?\n/)
+  for (const row of rows) {
+    const matches = [...row.matchAll(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g)]
+    if (!matches.length) continue
+    const content = row.replace(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g, '').trim()
+    if (!content) continue
+    for (const m of matches) {
+      const min = Number(m[1] || 0)
+      const sec = Number(m[2] || 0)
+      const msRaw = (m[3] || '').padEnd(3, '0')
+      const ms = Number(msRaw || 0)
+      const t = min * 60 + sec + ms / 1000
+      lines.push({ t, text: content })
+    }
+  }
+  lines.sort((a, b) => a.t - b.t)
+  const deduped = []
+  for (const line of lines) {
+    const prev = deduped[deduped.length - 1]
+    if (prev && Math.abs(prev.t - line.t) < 0.001) continue
+    deduped.push(line)
+  }
+  return deduped
+}
+
+function findLyricIndex(time) {
+  if (!lrcLines.length) return -1
+  let lo = 0
+  let hi = lrcLines.length - 1
+  if (time < lrcLines[0].t) return -1
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (lrcLines[mid].t <= time) lo = mid + 1
+    else hi = mid - 1
+  }
+  return Math.max(-1, lo - 1)
+}
+
+function updateLyricLines(time) {
+  const idx = findLyricIndex(time)
+  lyricLine.value = idx >= 0 ? lrcLines[idx]?.text || '' : ''
+  nextLyricLine.value = idx >= 0 ? lrcLines[idx + 1]?.text || '' : lrcLines[0]?.text || ''
+}
+
+function scheduleLyricUpdate() {
+  if (lyricRaf) return
+  lyricRaf = window.requestAnimationFrame(() => {
+    lyricRaf = null
+    const audio = audioRef.value
+    if (!audio) return
+    updateLyricLines(audio.currentTime || 0)
+  })
+}
+
+async function initLyrics() {
+  try {
+    const res = await fetch('/yesterday.lrc', { cache: 'force-cache' })
+    if (!res.ok) return
+    const text = await res.text()
+    lrcLines = parseLrc(text)
+    lyricReady.value = lrcLines.length > 0
+    scheduleLyricUpdate()
+  } catch (_) {}
 }
 
 function getGridClass(count) {
@@ -694,6 +769,18 @@ function cleanup() {
   if (preloadTimers.length) preloadTimers.forEach((t) => window.clearTimeout(t))
   preloadTimers = []
   preloadChain = Promise.resolve()
+
+  const audio = audioRef.value
+  if (audio) {
+    if (lyricTimeUpdateHandler) audio.removeEventListener('timeupdate', lyricTimeUpdateHandler)
+    if (lyricSeekedHandler) audio.removeEventListener('seeked', lyricSeekedHandler)
+    if (lyricPlayHandler) audio.removeEventListener('play', lyricPlayHandler)
+  }
+  lyricTimeUpdateHandler = null
+  lyricSeekedHandler = null
+  lyricPlayHandler = null
+  if (lyricRaf) window.cancelAnimationFrame(lyricRaf)
+  lyricRaf = null
 }
 
 onMounted(async () => {
@@ -705,6 +792,17 @@ onMounted(async () => {
   initBackToTop()
   initFabPosition()
   initTapToFlip()
+
+  await initLyrics()
+  const audio = audioRef.value
+  if (audio) {
+    lyricTimeUpdateHandler = () => scheduleLyricUpdate()
+    lyricSeekedHandler = () => scheduleLyricUpdate()
+    lyricPlayHandler = () => scheduleLyricUpdate()
+    audio.addEventListener('timeupdate', lyricTimeUpdateHandler)
+    audio.addEventListener('seeked', lyricSeekedHandler)
+    audio.addEventListener('play', lyricPlayHandler)
+  }
 
   zoom = mediumZoom('img[data-zoomable="true"]', { background: 'rgba(0, 0, 0, 0.9)' })
   zoom.on('open', (e) => {
@@ -1011,6 +1109,21 @@ onBeforeUnmount(() => {
     <span class="text-lg sm:text-2xl mt-4 block font-sans text-gray-600 font-medium tracking-widest"
       >我们的故事，未完待续</span
     >
+  </div>
+
+  <div
+    v-if="immersiveActive && lyricReady"
+    class="fixed left-0 right-0 z-[85] pointer-events-none px-4"
+    :style="{ bottom: `calc(${fabBottom}px + 4.5rem + env(safe-area-inset-bottom))` }"
+  >
+    <div class="mx-auto max-w-[92vw] text-center">
+      <div class="text-white text-lg sm:text-xl font-semibold drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
+        {{ lyricLine }}
+      </div>
+      <div class="text-white/60 text-sm sm:text-base mt-2 drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
+        {{ nextLyricLine }}
+      </div>
+    </div>
   </div>
 
   <audio id="bg-music" ref="audioRef" loop>
