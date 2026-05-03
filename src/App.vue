@@ -922,7 +922,7 @@ onBeforeUnmount(() => {
         id="lightbox-img"
         :src="lightboxSrc"
         alt="Enlarged image"
-        class="block max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
+        class="block w-auto h-auto max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
       />
       <button
         id="lightbox-close"
