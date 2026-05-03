@@ -49,6 +49,7 @@ let tapToFlipInput = null
 let zoom = null
 let zoomCaptionEl = null
 let zoomCloseEl = null
+let zoomCaptionPositionHandler = null
 let preloadChain = Promise.resolve()
 let preloadTimers = []
 
@@ -132,7 +133,7 @@ function ensureZoomUi() {
   if (!zoomCaptionEl) {
     zoomCaptionEl = document.createElement('div')
     zoomCaptionEl.className =
-      'fixed left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)_+_0.5rem)] max-w-[calc(100vw-5.5rem)] px-4 py-2 text-center text-white text-base sm:text-lg font-medium bg-black/60 rounded-full z-[9999] pointer-events-none'
+      'fixed px-4 py-2 text-center text-white text-base sm:text-lg font-medium bg-black/60 rounded-full z-[9999] pointer-events-none'
     zoomCaptionEl.style.display = 'none'
     document.body.appendChild(zoomCaptionEl)
   }
@@ -151,6 +152,29 @@ function ensureZoomUi() {
     })
     document.body.appendChild(zoomCloseEl)
   }
+}
+
+function positionZoomCaption() {
+  if (!zoomCaptionEl || zoomCaptionEl.style.display === 'none') return
+  const zoomedImg =
+    document.querySelector('.medium-zoom-image--opened') || document.querySelector('.medium-zoom-image--open')
+  if (!zoomedImg) return
+
+  const rect = zoomedImg.getBoundingClientRect()
+  const centerX = rect.left + rect.width / 2
+
+  zoomCaptionEl.style.left = `${centerX}px`
+  zoomCaptionEl.style.transform = 'translateX(-50%)'
+  zoomCaptionEl.style.maxWidth = `${Math.max(0, rect.width - 16)}px`
+  zoomCaptionEl.style.whiteSpace = 'nowrap'
+  zoomCaptionEl.style.overflow = 'hidden'
+  zoomCaptionEl.style.textOverflow = 'ellipsis'
+
+  requestAnimationFrame(() => {
+    const captionRect = zoomCaptionEl.getBoundingClientRect()
+    const top = Math.max(8 + (window.visualViewport?.offsetTop || 0), rect.top - captionRect.height - 12)
+    zoomCaptionEl.style.top = `${top}px`
+  })
 }
 
 function onZoomClick(e) {
@@ -664,6 +688,8 @@ function cleanup() {
   zoomCaptionEl = null
   if (zoomCloseEl) zoomCloseEl.remove()
   zoomCloseEl = null
+  if (zoomCaptionPositionHandler) window.removeEventListener('resize', zoomCaptionPositionHandler)
+  zoomCaptionPositionHandler = null
 
   if (preloadTimers.length) preloadTimers.forEach((t) => window.clearTimeout(t))
   preloadTimers = []
@@ -692,9 +718,18 @@ onMounted(async () => {
     if (zoomCloseEl) zoomCloseEl.style.display = ''
     ensureMusicPlaying()
   })
+  zoom.on('opened', () => {
+    positionZoomCaption()
+    if (!zoomCaptionPositionHandler) {
+      zoomCaptionPositionHandler = throttle(positionZoomCaption, 50)
+      window.addEventListener('resize', zoomCaptionPositionHandler)
+    }
+  })
   zoom.on('close', () => {
     if (zoomCaptionEl) zoomCaptionEl.style.display = 'none'
     if (zoomCloseEl) zoomCloseEl.style.display = 'none'
+    if (zoomCaptionPositionHandler) window.removeEventListener('resize', zoomCaptionPositionHandler)
+    zoomCaptionPositionHandler = null
   })
 
   fullscreenChangeHandler = () => {
