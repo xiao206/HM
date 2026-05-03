@@ -874,7 +874,7 @@ onBeforeUnmount(() => {
   <div
     v-show="lightboxOpen"
     id="lightbox"
-    class="fixed inset-0 bg-black bg-opacity-90 flex items-start justify-center z-[60] p-4 pt-6 transition-opacity duration-300"
+    class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4 transition-opacity duration-300"
     @click.self="closeLightbox"
   >
     <div class="relative max-w-full max-h-[90vh]">
