@@ -905,13 +905,15 @@ onBeforeUnmount(() => {
   <div
     v-show="lightboxOpen"
     id="lightbox"
-    class="fixed inset-0 h-[100svh] bg-black bg-opacity-90 flex items-center justify-center z-[60] px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] pt-[calc(1rem_+_env(safe-area-inset-top))] transition-opacity duration-300 overflow-hidden overscroll-contain"
+    class="fixed inset-0 h-screen h-[100svh] bg-black bg-opacity-90 flex items-center justify-center z-[60] px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] pt-[calc(1rem_+_env(safe-area-inset-top))] transition-opacity duration-300 overflow-hidden overscroll-contain"
     @click.self="closeLightbox"
     @wheel.prevent
     @touchmove.prevent
   >
-    <div class="w-full h-[calc(100svh_-_2rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] flex items-center justify-center">
-      <div class="relative max-w-full max-h-full">
+    <div
+      class="w-full h-[calc(100vh_-_2rem)] h-[calc(100svh_-_2rem_-_env(safe-area-inset-top)_-_env(safe-area-inset-bottom))] flex items-center justify-center"
+    >
+      <div class="relative max-w-full max-h-full sm:max-w-[90vw] sm:max-h-[90vh]">
         <img
           id="lightbox-img"
           :src="lightboxSrc"
