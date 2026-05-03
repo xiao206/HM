@@ -41,7 +41,12 @@ let tapToFlipDownHandler = null
 let tapToFlipMoveHandler = null
 let tapToFlipUpHandler = null
 let tapToFlipCancelHandler = null
+let tapToFlipTouchStartHandler = null
+let tapToFlipTouchMoveHandler = null
+let tapToFlipTouchEndHandler = null
+let tapToFlipTouchCancelHandler = null
 let tapToFlipStart = null
+let tapToFlipInput = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -358,13 +363,14 @@ function initFabPosition() {
 function initTapToFlip() {
   const el = bookContainerRef.value
   if (!el) return
+  const isTouchDevice = () => (navigator && navigator.maxTouchPoints > 0) || 'ontouchstart' in window
 
   tapToFlipDownHandler = (e) => {
-    const isTouch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
-    if (!isTouch) return
+    if (!isTouchDevice()) return
     if (e.pointerType === 'mouse') return
     if (e.button != null && e.button !== 0) return
 
+    tapToFlipInput = 'pointer'
     tapToFlipStart = {
       x: e.clientX,
       y: e.clientY,
@@ -391,8 +397,7 @@ function initTapToFlip() {
     if (!start) return
     if (!pageFlip) return
 
-    const isTouch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
-    if (!isTouch) return
+    if (!isTouchDevice()) return
     if (e.pointerType === 'mouse') return
     if (Date.now() - start.t > 600) return
 
@@ -420,12 +425,78 @@ function initTapToFlip() {
 
   tapToFlipCancelHandler = () => {
     tapToFlipStart = null
+    tapToFlipInput = null
+  }
+
+  tapToFlipTouchStartHandler = (e) => {
+    if (!isTouchDevice()) return
+    if (tapToFlipInput === 'pointer') return
+    if (!e.changedTouches || e.changedTouches.length !== 1) return
+    const t = e.changedTouches[0]
+    tapToFlipInput = 'touch'
+    tapToFlipStart = {
+      x: t.clientX,
+      y: t.clientY,
+      t: Date.now(),
+      target: e.target,
+      moved: false,
+    }
+  }
+
+  tapToFlipTouchMoveHandler = (e) => {
+    const start = tapToFlipStart
+    if (!start) return
+    if (tapToFlipInput !== 'touch') return
+    if (!e.changedTouches || e.changedTouches.length !== 1) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (dx * dx + dy * dy > 144) start.moved = true
+  }
+
+  tapToFlipTouchEndHandler = (e) => {
+    const start = tapToFlipStart
+    tapToFlipStart = null
+    tapToFlipInput = null
+    if (!start) return
+    if (!pageFlip) return
+    if (!isTouchDevice()) return
+    if (!e.changedTouches || e.changedTouches.length !== 1) return
+    if (Date.now() - start.t > 600) return
+    if (start.moved) return
+
+    const target = start.target
+    if (
+      target &&
+      target.closest &&
+      target.closest('a,button,input,textarea,select,label,img,video,#lightbox,#about-us-modal,.polaroid-frame')
+    )
+      return
+
+    e.preventDefault()
+    e.stopImmediatePropagation()
+
+    const t = e.changedTouches[0]
+    const rect = el.getBoundingClientRect()
+    const x = t.clientX - rect.left
+    if (x > rect.width / 2) pageFlip.flipNext()
+    else pageFlip.flipPrev()
+  }
+
+  tapToFlipTouchCancelHandler = () => {
+    tapToFlipStart = null
+    tapToFlipInput = null
   }
 
   el.addEventListener('pointerdown', tapToFlipDownHandler, { capture: true, passive: true })
   el.addEventListener('pointermove', tapToFlipMoveHandler, { capture: true, passive: true })
   el.addEventListener('pointerup', tapToFlipUpHandler, { capture: true, passive: false })
   el.addEventListener('pointercancel', tapToFlipCancelHandler, { capture: true, passive: true })
+
+  el.addEventListener('touchstart', tapToFlipTouchStartHandler, { capture: true, passive: true })
+  el.addEventListener('touchmove', tapToFlipTouchMoveHandler, { capture: true, passive: true })
+  el.addEventListener('touchend', tapToFlipTouchEndHandler, { capture: true, passive: false })
+  el.addEventListener('touchcancel', tapToFlipTouchCancelHandler, { capture: true, passive: true })
 }
 
 function initPageFlip() {
@@ -527,12 +598,21 @@ function cleanup() {
     if (tapToFlipMoveHandler) containerEl.removeEventListener('pointermove', tapToFlipMoveHandler)
     if (tapToFlipUpHandler) containerEl.removeEventListener('pointerup', tapToFlipUpHandler)
     if (tapToFlipCancelHandler) containerEl.removeEventListener('pointercancel', tapToFlipCancelHandler)
+    if (tapToFlipTouchStartHandler) containerEl.removeEventListener('touchstart', tapToFlipTouchStartHandler)
+    if (tapToFlipTouchMoveHandler) containerEl.removeEventListener('touchmove', tapToFlipTouchMoveHandler)
+    if (tapToFlipTouchEndHandler) containerEl.removeEventListener('touchend', tapToFlipTouchEndHandler)
+    if (tapToFlipTouchCancelHandler) containerEl.removeEventListener('touchcancel', tapToFlipTouchCancelHandler)
   }
   tapToFlipDownHandler = null
   tapToFlipMoveHandler = null
   tapToFlipUpHandler = null
   tapToFlipCancelHandler = null
+  tapToFlipTouchStartHandler = null
+  tapToFlipTouchMoveHandler = null
+  tapToFlipTouchEndHandler = null
+  tapToFlipTouchCancelHandler = null
   tapToFlipStart = null
+  tapToFlipInput = null
 }
 
 onMounted(async () => {
