@@ -582,15 +582,23 @@ onBeforeUnmount(() => {
 
       <button
         id="prev-btn"
-        class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0 sm:-translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
-        @click="pageFlip && pageFlip.flipPrev()"
+        class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0 sm:-translate-x-12 z-[80] text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
+        aria-label="上一页"
+        @pointerdown.stop.prevent
+        @touchstart.stop.prevent
+        @mousedown.stop.prevent
+        @click.stop="pageFlip && pageFlip.flipPrev()"
       >
         <i class="fas fa-chevron-left text-2xl sm:text-4xl"></i>
       </button>
       <button
         id="next-btn"
-        class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0 sm:translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
-        @click="pageFlip && pageFlip.flipNext()"
+        class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0 sm:translate-x-12 z-[80] text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
+        aria-label="下一页"
+        @pointerdown.stop.prevent
+        @touchstart.stop.prevent
+        @mousedown.stop.prevent
+        @click.stop="pageFlip && pageFlip.flipNext()"
       >
         <i class="fas fa-chevron-right text-2xl sm:text-4xl"></i>
       </button>
@@ -620,14 +628,35 @@ onBeforeUnmount(() => {
     </footer>
   </div>
 
-  <button
-    id="immersive-toggle"
-    class="fixed bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
-    :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
-    @click="toggleImmersive"
-  >
-    <i :class="immersiveActive ? 'fas fa-compress' : 'fas fa-book-open'"></i>
-  </button>
+  <div id="fab-dock" class="fixed z-[80] flex flex-col items-center gap-3">
+    <button
+      id="immersive-toggle"
+      class="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden"
+      :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
+      @click="toggleImmersive"
+    >
+      <i :class="immersiveActive ? 'fas fa-compress' : 'fas fa-book-open'"></i>
+    </button>
+
+    <button
+      id="back-to-top"
+      class="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition"
+      :class="backToTopVisible ? 'is-visible' : 'opacity-0 invisible'"
+      aria-label="回到顶部"
+      @click="backToTop"
+    >
+      <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <button
+      id="music-toggle"
+      class="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition"
+      :aria-label="musicPlaying ? '暂停音乐' : '播放音乐'"
+      @click="toggleMusic"
+    >
+      <i :class="musicPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+    </button>
+  </div>
 
   <div
     v-show="aboutModalOpen"
@@ -728,20 +757,4 @@ onBeforeUnmount(() => {
   <audio id="bg-music" ref="audioRef" loop>
     <source src="/yesterday.mp3" type="audio/mpeg" />
   </audio>
-  <button
-    id="music-toggle"
-    class="fixed bottom-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
-    @click="toggleMusic"
-  >
-    <i :class="musicPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
-  </button>
-
-  <button
-    id="back-to-top"
-    class="fixed bottom-6 right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
-    :class="backToTopVisible ? 'is-visible' : 'opacity-0 invisible'"
-    @click="backToTop"
-  >
-    <i class="fas fa-arrow-up"></i>
-  </button>
 </template>
