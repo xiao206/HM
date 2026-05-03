@@ -1,5 +1,6 @@
 <script setup>
 import mediumZoom from 'medium-zoom'
+import 'medium-zoom/dist/style.css'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import postsData from './data/posts'
 
