@@ -12,7 +12,6 @@ const placeholderSrc =
 
 const bookRef = ref(null)
 const bookContainerRef = ref(null)
-const footerRef = ref(null)
 const lightboxOpen = ref(false)
 const lightboxSrc = ref('')
 const lightboxCaption = ref('')
@@ -23,7 +22,6 @@ const aboutModalVisible = ref(false)
 const backToTopVisible = ref(false)
 const musicPlaying = ref(false)
 const immersiveActive = ref(false)
-const fabBottom = ref(24)
 
 const audioRef = ref(null)
 const fireworksContainerRef = ref(null)
@@ -36,7 +34,6 @@ let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
 let keydownHandler = null
 let fullscreenChangeHandler = null
-let fabPositionHandler = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -228,28 +225,6 @@ function backToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function updateFabBottom() {
-  if (immersiveActive.value) {
-    fabBottom.value = 24
-    return
-  }
-
-  if (window.innerWidth > 640) {
-    fabBottom.value = 24
-    return
-  }
-
-  const footerEl = footerRef.value
-  if (!footerEl) {
-    fabBottom.value = 24
-    return
-  }
-
-  const rect = footerEl.getBoundingClientRect()
-  const gap = window.innerHeight - rect.bottom
-  fabBottom.value = Math.max(24, Math.round(gap + 16))
-}
-
 async function enterImmersive() {
   immersiveActive.value = true
   document.documentElement.classList.add('overflow-hidden')
@@ -334,13 +309,6 @@ function initMusicAutoPlayOnScroll() {
 function initBackToTop() {
   backToTopScrollHandler = throttle(updateBackToTopVisibility, 200)
   window.addEventListener('scroll', backToTopScrollHandler)
-}
-
-function initFabPosition() {
-  fabPositionHandler = throttle(updateFabBottom, 100)
-  window.addEventListener('scroll', fabPositionHandler)
-  window.addEventListener('resize', fabPositionHandler)
-  updateFabBottom()
 }
 
 function initPageFlip() {
@@ -429,12 +397,6 @@ function cleanup() {
 
   if (fullscreenChangeHandler) document.removeEventListener('fullscreenchange', fullscreenChangeHandler)
   fullscreenChangeHandler = null
-
-  if (fabPositionHandler) {
-    window.removeEventListener('scroll', fabPositionHandler)
-    window.removeEventListener('resize', fabPositionHandler)
-  }
-  fabPositionHandler = null
 }
 
 onMounted(async () => {
@@ -444,7 +406,6 @@ onMounted(async () => {
   initKeyboardNavigation()
   initMusicAutoPlayOnScroll()
   initBackToTop()
-  initFabPosition()
 
   fullscreenChangeHandler = () => {
     if (!document.fullscreenElement && immersiveActive.value) {
@@ -621,11 +582,7 @@ onBeforeUnmount(() => {
 
     </div>
 
-    <footer
-      v-if="!immersiveActive"
-      ref="footerRef"
-      class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full"
-    >
+    <footer v-if="!immersiveActive" class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full">
       <p class="text-gray-500 mb-2 text-xs sm:text-sm">&copy; 2024 缺牙巴们的那些事. All Rights Reserved.</p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-2 mb-2">
         <p class="text-gray-500 text-xs sm:text-sm">
@@ -651,8 +608,7 @@ onBeforeUnmount(() => {
 
   <button
     id="immersive-toggle"
-    class="fixed left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
-    :style="{ bottom: `calc(${fabBottom}px + env(safe-area-inset-bottom))` }"
+    class="fixed bottom-56 sm:bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
     :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
     @click="toggleImmersive"
   >
@@ -760,8 +716,7 @@ onBeforeUnmount(() => {
   </audio>
   <button
     id="music-toggle"
-    class="fixed right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
-    :style="{ bottom: `calc(${fabBottom}px + env(safe-area-inset-bottom))` }"
+    class="fixed bottom-56 sm:bottom-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
     @click="toggleMusic"
   >
     <i :class="musicPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
@@ -769,8 +724,7 @@ onBeforeUnmount(() => {
 
   <button
     id="back-to-top"
-    class="fixed right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
-    :style="{ bottom: `calc(${fabBottom}px + env(safe-area-inset-bottom))` }"
+    class="fixed bottom-56 sm:bottom-6 right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
     :class="backToTopVisible ? 'is-visible' : 'opacity-0 invisible'"
     @click="backToTop"
   >
