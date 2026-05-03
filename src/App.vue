@@ -34,7 +34,6 @@ let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
 let keydownHandler = null
 let fullscreenChangeHandler = null
-let pageFlipInitAttempts = 0
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -313,19 +312,10 @@ function initBackToTop() {
 }
 
 function initPageFlip() {
-  if (pageFlip) return
   const bookEl = bookRef.value
   if (!bookEl) return
-
-  pageFlipInitAttempts += 1
-  if (pageFlipInitAttempts > 200) return
   const St = window.St
-  if (!St || !St.PageFlip) {
-    setTimeout(() => {
-      initPageFlip()
-    }, 50)
-    return
-  }
+  if (!St || !St.PageFlip) return
 
   setTimeout(() => {
     pageFlip = new St.PageFlip(bookEl, {
