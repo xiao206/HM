@@ -145,18 +145,6 @@
                 padding: 0.5rem 0.5rem 1.5rem 0.5rem !important;
             }
             
-            /* Adjust navigation buttons for mobile */
-            #prev-btn,
-            #next-btn {
-                width: 40px;
-                height: 40px;
-                padding: 8px;
-            }
-            
-            #prev-btn i,
-            #next-btn i {
-                font-size: 1.25rem !important;
-            }
         }
         
         /* Tablet adjustments */
@@ -177,10 +165,6 @@
                 touch-action: manipulation;
             }
             
-            #prev-btn,
-            #next-btn {
-                touch-action: manipulation;
-            }
         }
 
         /* Mobile Optimizations */
@@ -287,8 +271,6 @@
     filter: saturate(1.05) contrast(1.03);
 }
 
-#prev-btn,
-#next-btn,
 #music-toggle,
 #back-to-top,
 #immersive-toggle {
@@ -300,8 +282,6 @@
     transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, opacity 160ms ease;
 }
 
-#prev-btn:active,
-#next-btn:active,
 #music-toggle:active,
 #back-to-top:active,
 #immersive-toggle:active {

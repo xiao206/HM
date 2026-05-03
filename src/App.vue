@@ -580,20 +580,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <button
-        id="prev-btn"
-        class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0 sm:-translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
-        @click="pageFlip && pageFlip.flipPrev()"
-      >
-        <i class="fas fa-chevron-left text-2xl sm:text-4xl"></i>
-      </button>
-      <button
-        id="next-btn"
-        class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0 sm:translate-x-12 z-20 text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
-        @click="pageFlip && pageFlip.flipNext()"
-      >
-        <i class="fas fa-chevron-right text-2xl sm:text-4xl"></i>
-      </button>
     </div>
 
     <footer v-if="!immersiveActive" class="text-center mt-auto py-8 border-t border-gray-200 pb-20 sm:pb-8 relative z-10 w-full">
