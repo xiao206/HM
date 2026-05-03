@@ -17,7 +17,24 @@
     />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/css/style.css" />
-    <script type="module" crossorigin src="/assets/index-CbbbcTUp.js"></script>
+    <script>
+      (function () {
+        var f = window.fetch
+        if (!f) return
+        window.fetch = function (input, init) {
+          try {
+            if (typeof input === 'string' && input.indexOf('/yesterday.lrc') === 0) {
+              var u = new URL(input, window.location.href)
+              u.searchParams.set('v', String(Date.now()))
+              input = u.pathname + u.search
+              init = Object.assign({}, init, { cache: 'no-store' })
+            }
+          } catch (e) {}
+          return f(input, init)
+        }
+      })()
+    </script>
+    <script type="module" crossorigin src="/assets/index-8bXNqtJU.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-CDZxSmi-.css">
   </head>
   <body class="bg-gray-100 text-gray-800">
