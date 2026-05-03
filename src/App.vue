@@ -37,6 +37,10 @@ let firstMusicScrollHandler = null
 let keydownHandler = null
 let fullscreenChangeHandler = null
 let fabPositionHandler = null
+let tapToFlipDownHandler = null
+let tapToFlipUpHandler = null
+let tapToFlipCancelHandler = null
+let tapToFlipStart = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -350,6 +354,61 @@ function initFabPosition() {
   updateFabBottom()
 }
 
+function initTapToFlip() {
+  const el = bookContainerRef.value
+  if (!el) return
+
+  tapToFlipDownHandler = (e) => {
+    const isTouch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    if (!isTouch) return
+    if (e.pointerType === 'mouse') return
+    if (e.button != null && e.button !== 0) return
+
+    tapToFlipStart = {
+      x: e.clientX,
+      y: e.clientY,
+      t: Date.now(),
+      target: e.target,
+    }
+  }
+
+  tapToFlipUpHandler = (e) => {
+    const start = tapToFlipStart
+    tapToFlipStart = null
+    if (!start) return
+    if (!pageFlip) return
+
+    const isTouch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    if (!isTouch) return
+    if (e.pointerType === 'mouse') return
+
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
+    if (dx * dx + dy * dy > 144) return
+
+    const target = start.target
+    if (
+      target &&
+      target.closest &&
+      target.closest('a,button,input,textarea,select,label,img,video,#lightbox,#about-us-modal,.polaroid-frame')
+    )
+      return
+
+    const rect = el.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    if (x > rect.width / 2) pageFlip.flipNext()
+    else pageFlip.flipPrev()
+  }
+
+  tapToFlipCancelHandler = () => {
+    tapToFlipStart = null
+  }
+
+  el.addEventListener('pointerdown', tapToFlipDownHandler, { passive: true })
+  el.addEventListener('pointerup', tapToFlipUpHandler, { passive: true })
+  el.addEventListener('pointercancel', tapToFlipCancelHandler, { passive: true })
+}
+
 function initPageFlip() {
   const bookEl = bookRef.value
   if (!bookEl) return
@@ -442,6 +501,17 @@ function cleanup() {
     window.removeEventListener('resize', fabPositionHandler)
   }
   fabPositionHandler = null
+
+  const containerEl = bookContainerRef.value
+  if (containerEl) {
+    if (tapToFlipDownHandler) containerEl.removeEventListener('pointerdown', tapToFlipDownHandler)
+    if (tapToFlipUpHandler) containerEl.removeEventListener('pointerup', tapToFlipUpHandler)
+    if (tapToFlipCancelHandler) containerEl.removeEventListener('pointercancel', tapToFlipCancelHandler)
+  }
+  tapToFlipDownHandler = null
+  tapToFlipUpHandler = null
+  tapToFlipCancelHandler = null
+  tapToFlipStart = null
 }
 
 onMounted(async () => {
@@ -452,6 +522,7 @@ onMounted(async () => {
   initMusicAutoPlayOnScroll()
   initBackToTop()
   initFabPosition()
+  initTapToFlip()
 
   fullscreenChangeHandler = () => {
     if (!document.fullscreenElement && immersiveActive.value) {
