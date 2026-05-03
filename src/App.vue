@@ -1,4 +1,5 @@
 <script setup>
+import mediumZoom from 'medium-zoom'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import postsData from './data/posts'
 
@@ -13,9 +14,6 @@ const placeholderSrc =
 const bookRef = ref(null)
 const bookContainerRef = ref(null)
 const footerRef = ref(null)
-const lightboxOpen = ref(false)
-const lightboxSrc = ref('')
-const lightboxCaption = ref('')
 const loadingHidden = ref(false)
 const loadingRemoved = ref(false)
 const aboutModalOpen = ref(false)
@@ -47,6 +45,9 @@ let tapToFlipTouchEndHandler = null
 let tapToFlipTouchCancelHandler = null
 let tapToFlipStart = null
 let tapToFlipInput = null
+let zoom = null
+let zoomCaptionEl = null
+let zoomCloseEl = null
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -93,9 +94,7 @@ function getContainerHeightClass(count) {
   return 'h-64 sm:h-72'
 }
 
-function closeLightbox() {
-  lightboxOpen.value = false
-}
+function noop() {}
 
 function ensureMusicPlaying() {
   const audio = audioRef.value
@@ -108,11 +107,29 @@ function ensureMusicPlaying() {
     .catch(() => {})
 }
 
-function openLightbox(src, caption) {
-  lightboxSrc.value = toPublicPath(src)
-  lightboxCaption.value = caption || ''
-  lightboxOpen.value = true
-  ensureMusicPlaying()
+function ensureZoomUi() {
+  if (!zoomCaptionEl) {
+    zoomCaptionEl = document.createElement('div')
+    zoomCaptionEl.className =
+      'fixed left-0 right-0 bottom-0 text-center text-white text-base sm:text-lg font-medium bg-black/50 py-2 z-[9999] pointer-events-none'
+    zoomCaptionEl.style.display = 'none'
+    document.body.appendChild(zoomCaptionEl)
+  }
+  if (!zoomCloseEl) {
+    zoomCloseEl = document.createElement('button')
+    zoomCloseEl.type = 'button'
+    zoomCloseEl.setAttribute('aria-label', 'Close')
+    zoomCloseEl.className =
+      'fixed top-4 right-4 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[10000]'
+    zoomCloseEl.style.display = 'none'
+    zoomCloseEl.innerHTML = '&times;'
+    zoomCloseEl.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (zoom) zoom.close()
+    })
+    document.body.appendChild(zoomCloseEl)
+  }
 }
 
 function loadImagesOnPage(pageElement) {
@@ -613,6 +630,13 @@ function cleanup() {
   tapToFlipTouchCancelHandler = null
   tapToFlipStart = null
   tapToFlipInput = null
+
+  if (zoom) zoom.detach()
+  zoom = null
+  if (zoomCaptionEl) zoomCaptionEl.remove()
+  zoomCaptionEl = null
+  if (zoomCloseEl) zoomCloseEl.remove()
+  zoomCloseEl = null
 }
 
 onMounted(async () => {
@@ -624,6 +648,23 @@ onMounted(async () => {
   initBackToTop()
   initFabPosition()
   initTapToFlip()
+
+  zoom = mediumZoom('img[data-zoomable="true"]', { background: 'rgba(0, 0, 0, 0.9)' })
+  zoom.on('open', (e) => {
+    ensureZoomUi()
+    const target = e?.target
+    const caption = target?.dataset?.zoomCaption || target?.alt || ''
+    if (zoomCaptionEl) {
+      zoomCaptionEl.textContent = caption
+      zoomCaptionEl.style.display = caption ? '' : 'none'
+    }
+    if (zoomCloseEl) zoomCloseEl.style.display = ''
+    ensureMusicPlaying()
+  })
+  zoom.on('close', () => {
+    if (zoomCaptionEl) zoomCaptionEl.style.display = 'none'
+    if (zoomCloseEl) zoomCloseEl.style.display = 'none'
+  })
 
   fullscreenChangeHandler = () => {
     if (!document.fullscreenElement && immersiveActive.value) {
@@ -734,6 +775,9 @@ onBeforeUnmount(() => {
                       >
                         <img
                           :data-src="toPublicPath(img)"
+                          data-zoomable="true"
+                          :data-zoom-src="toPublicPath(img)"
+                          :data-zoom-caption="post.title"
                           :src="placeholderSrc"
                           :alt="post.title"
                           loading="lazy"
@@ -744,7 +788,7 @@ onBeforeUnmount(() => {
                           @mouseup.stop
                           @touchstart.stop
                           @touchend.stop
-                          @click.stop="openLightbox(img, post.title)"
+                          @click.stop="noop"
                           @error="(e) => (e.target.src = placeholderSrc)"
                         />
                       </div>
@@ -868,36 +912,6 @@ onBeforeUnmount(() => {
         <br /><br />
         愿世间有颗无忧树，愿你我永远是同路。
       </p>
-    </div>
-  </div>
-
-  <div
-    v-show="lightboxOpen"
-    id="lightbox"
-    class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4 transition-opacity duration-300"
-    @click.self="closeLightbox"
-  >
-    <div class="relative max-w-full max-h-[90vh]">
-      <img
-        id="lightbox-img"
-        :src="lightboxSrc"
-        alt="Enlarged image"
-        class="block max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
-      />
-      <button
-        id="lightbox-close"
-        class="absolute top-2 right-2 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[62]"
-        aria-label="Close Lightbox"
-        @click.stop="closeLightbox"
-      >
-        &times;
-      </button>
-      <div
-        id="lightbox-caption"
-        class="absolute bottom-0 left-0 right-0 text-center text-white text-lg font-medium bg-black/50 py-2 z-[61] rounded-b-lg"
-      >
-        {{ lightboxCaption }}
-      </div>
     </div>
   </div>
 

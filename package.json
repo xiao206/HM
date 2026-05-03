@@ -10,6 +10,7 @@
     "deploy": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
+    "medium-zoom": "^1.1.0",
     "vue": "^3.5.32"
   },
   "devDependencies": {
