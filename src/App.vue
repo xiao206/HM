@@ -173,7 +173,7 @@ function scheduleLyricUpdate() {
 
 async function initLyrics() {
   try {
-    const res = await fetch('/yesterday.lrc', { cache: 'force-cache' })
+    const res = await fetch(`/yesterday.lrc?v=${Date.now()}`, { cache: 'no-store' })
     if (!res.ok) return
     const text = await res.text()
     lrcLines = parseLrc(text)
