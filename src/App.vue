@@ -47,6 +47,8 @@ let tapToFlipTouchEndHandler = null
 let tapToFlipTouchCancelHandler = null
 let tapToFlipStart = null
 let tapToFlipInput = null
+let lightboxScrollTop = 0
+let lightboxScrollLocked = false
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -93,8 +95,35 @@ function getContainerHeightClass(count) {
   return 'h-64 sm:h-72'
 }
 
+function lockScrollForLightbox() {
+  if (lightboxScrollLocked) return
+  lightboxScrollLocked = true
+  lightboxScrollTop = window.scrollY || 0
+  document.documentElement.style.overflow = 'hidden'
+  document.body.style.overflow = 'hidden'
+  document.body.style.position = 'fixed'
+  document.body.style.top = `-${lightboxScrollTop}px`
+  document.body.style.left = '0'
+  document.body.style.right = '0'
+  document.body.style.width = '100%'
+}
+
+function unlockScrollForLightbox() {
+  if (!lightboxScrollLocked) return
+  lightboxScrollLocked = false
+  document.documentElement.style.overflow = ''
+  document.body.style.overflow = ''
+  document.body.style.position = ''
+  document.body.style.top = ''
+  document.body.style.left = ''
+  document.body.style.right = ''
+  document.body.style.width = ''
+  window.scrollTo(0, lightboxScrollTop)
+}
+
 function closeLightbox() {
   lightboxOpen.value = false
+  unlockScrollForLightbox()
 }
 
 function ensureMusicPlaying() {
@@ -112,6 +141,7 @@ function openLightbox(src, caption) {
   lightboxSrc.value = toPublicPath(src)
   lightboxCaption.value = caption || ''
   lightboxOpen.value = true
+  lockScrollForLightbox()
   ensureMusicPlaying()
 }
 
@@ -613,6 +643,7 @@ function cleanup() {
   tapToFlipTouchCancelHandler = null
   tapToFlipStart = null
   tapToFlipInput = null
+  unlockScrollForLightbox()
 }
 
 onMounted(async () => {
