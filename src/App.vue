@@ -316,8 +316,8 @@ async function enterImmersive() {
   immersiveActive.value = true
   document.documentElement.classList.add('overflow-hidden')
 
-  const el = bookContainerRef.value
-  if (el && document.fullscreenEnabled && !document.fullscreenElement) {
+  const el = document.documentElement
+  if (document.fullscreenEnabled && !document.fullscreenElement) {
     try {
       await el.requestFullscreen({ navigationUI: 'hide' })
     } catch (_) {}
