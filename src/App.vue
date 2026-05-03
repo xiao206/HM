@@ -225,6 +225,16 @@ function backToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+function flipPrevFromButton() {
+  if (!pageFlip) return
+  pageFlip.flipPrev()
+}
+
+function flipNextFromButton() {
+  if (!pageFlip) return
+  pageFlip.flipNext()
+}
+
 async function enterImmersive() {
   immersiveActive.value = true
   document.documentElement.classList.add('overflow-hidden')
@@ -584,10 +594,10 @@ onBeforeUnmount(() => {
         id="prev-btn"
         class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-0 sm:-translate-x-12 z-[80] text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
         aria-label="上一页"
-        @pointerdown.stop.prevent
-        @touchstart.stop.prevent
-        @mousedown.stop.prevent
-        @click.stop="pageFlip && pageFlip.flipPrev()"
+        @pointerdown.stop.prevent="flipPrevFromButton"
+        @touchstart.stop.prevent="flipPrevFromButton"
+        @mousedown.stop.prevent="flipPrevFromButton"
+        @click.stop.prevent="flipPrevFromButton"
       >
         <i class="fas fa-chevron-left text-2xl sm:text-4xl"></i>
       </button>
@@ -595,10 +605,10 @@ onBeforeUnmount(() => {
         id="next-btn"
         class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-0 sm:translate-x-12 z-[80] text-gray-500 hover:text-gray-900 transition-all duration-300 p-3 bg-white/80 rounded-full shadow-md hover:shadow-lg sm:bg-white/40 sm:hover:bg-white/90 backdrop-blur-sm"
         aria-label="下一页"
-        @pointerdown.stop.prevent
-        @touchstart.stop.prevent
-        @mousedown.stop.prevent
-        @click.stop="pageFlip && pageFlip.flipNext()"
+        @pointerdown.stop.prevent="flipNextFromButton"
+        @touchstart.stop.prevent="flipNextFromButton"
+        @mousedown.stop.prevent="flipNextFromButton"
+        @click.stop.prevent="flipNextFromButton"
       >
         <i class="fas fa-chevron-right text-2xl sm:text-4xl"></i>
       </button>
