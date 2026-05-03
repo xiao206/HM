@@ -877,25 +877,27 @@ onBeforeUnmount(() => {
     class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[60] p-4 transition-opacity duration-300"
     @click.self="closeLightbox"
   >
-    <img
-      id="lightbox-img"
-      :src="lightboxSrc"
-      alt="Enlarged image"
-      class="max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
-    />
-    <button
-      id="lightbox-close"
-      class="absolute top-4 right-6 text-white text-4xl font-bold hover:text-gray-300 transition-colors z-[62] cursor-pointer"
-      aria-label="Close Lightbox"
-      @click.stop="closeLightbox"
-    >
-      &times;
-    </button>
-    <div
-      id="lightbox-caption"
-      class="absolute bottom-6 left-0 right-0 text-center text-white text-lg font-medium bg-black bg-opacity-50 py-2 z-[61]"
-    >
-      {{ lightboxCaption }}
+    <div class="relative max-w-full max-h-[90vh]">
+      <img
+        id="lightbox-img"
+        :src="lightboxSrc"
+        alt="Enlarged image"
+        class="block max-w-full max-h-[90vh] rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
+      />
+      <button
+        id="lightbox-close"
+        class="absolute top-2 right-2 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[62]"
+        aria-label="Close Lightbox"
+        @click.stop="closeLightbox"
+      >
+        &times;
+      </button>
+      <div
+        id="lightbox-caption"
+        class="absolute bottom-0 left-0 right-0 text-center text-white text-lg font-medium bg-black/50 py-2 z-[61] rounded-b-lg"
+      >
+        {{ lightboxCaption }}
+      </div>
     </div>
   </div>
 
