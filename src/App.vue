@@ -38,6 +38,7 @@ let keydownHandler = null
 let fullscreenChangeHandler = null
 let fabPositionHandler = null
 let tapToFlipDownHandler = null
+let tapToFlipMoveHandler = null
 let tapToFlipUpHandler = null
 let tapToFlipCancelHandler = null
 let tapToFlipStart = null
@@ -369,7 +370,19 @@ function initTapToFlip() {
       y: e.clientY,
       t: Date.now(),
       target: e.target,
+      pointerId: e.pointerId,
+      moved: false,
     }
+  }
+
+  tapToFlipMoveHandler = (e) => {
+    const start = tapToFlipStart
+    if (!start) return
+    if (start.pointerId != null && e.pointerId != null && start.pointerId !== e.pointerId) return
+
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
+    if (dx * dx + dy * dy > 144) start.moved = true
   }
 
   tapToFlipUpHandler = (e) => {
@@ -381,10 +394,12 @@ function initTapToFlip() {
     const isTouch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches
     if (!isTouch) return
     if (e.pointerType === 'mouse') return
+    if (Date.now() - start.t > 600) return
 
     const dx = e.clientX - start.x
     const dy = e.clientY - start.y
     if (dx * dx + dy * dy > 144) return
+    if (start.moved) return
 
     const target = start.target
     if (
@@ -393,6 +408,9 @@ function initTapToFlip() {
       target.closest('a,button,input,textarea,select,label,img,video,#lightbox,#about-us-modal,.polaroid-frame')
     )
       return
+
+    e.preventDefault()
+    e.stopImmediatePropagation()
 
     const rect = el.getBoundingClientRect()
     const x = e.clientX - rect.left
@@ -404,9 +422,10 @@ function initTapToFlip() {
     tapToFlipStart = null
   }
 
-  el.addEventListener('pointerdown', tapToFlipDownHandler, { passive: true })
-  el.addEventListener('pointerup', tapToFlipUpHandler, { passive: true })
-  el.addEventListener('pointercancel', tapToFlipCancelHandler, { passive: true })
+  el.addEventListener('pointerdown', tapToFlipDownHandler, { capture: true, passive: true })
+  el.addEventListener('pointermove', tapToFlipMoveHandler, { capture: true, passive: true })
+  el.addEventListener('pointerup', tapToFlipUpHandler, { capture: true, passive: false })
+  el.addEventListener('pointercancel', tapToFlipCancelHandler, { capture: true, passive: true })
 }
 
 function initPageFlip() {
@@ -505,10 +524,12 @@ function cleanup() {
   const containerEl = bookContainerRef.value
   if (containerEl) {
     if (tapToFlipDownHandler) containerEl.removeEventListener('pointerdown', tapToFlipDownHandler)
+    if (tapToFlipMoveHandler) containerEl.removeEventListener('pointermove', tapToFlipMoveHandler)
     if (tapToFlipUpHandler) containerEl.removeEventListener('pointerup', tapToFlipUpHandler)
     if (tapToFlipCancelHandler) containerEl.removeEventListener('pointercancel', tapToFlipCancelHandler)
   }
   tapToFlipDownHandler = null
+  tapToFlipMoveHandler = null
   tapToFlipUpHandler = null
   tapToFlipCancelHandler = null
   tapToFlipStart = null
