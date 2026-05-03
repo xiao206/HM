@@ -608,7 +608,7 @@ onBeforeUnmount(() => {
 
   <button
     id="immersive-toggle"
-    class="fixed bottom-16 sm:bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
+    class="fixed bottom-56 sm:bottom-6 left-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition sm:hidden z-[80]"
     :aria-label="immersiveActive ? '退出沉浸模式' : '沉浸模式'"
     @click="toggleImmersive"
   >
@@ -716,7 +716,7 @@ onBeforeUnmount(() => {
   </audio>
   <button
     id="music-toggle"
-    class="fixed bottom-16 sm:bottom-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
+    class="fixed bottom-56 sm:bottom-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
     @click="toggleMusic"
   >
     <i :class="musicPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
@@ -724,7 +724,7 @@ onBeforeUnmount(() => {
 
   <button
     id="back-to-top"
-    class="fixed bottom-16 sm:bottom-6 right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
+    class="fixed bottom-56 sm:bottom-6 right-20 w-12 h-12 bg-white/80 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center text-gray-700 hover:bg-white transition z-40"
     :class="backToTopVisible ? 'is-visible' : 'opacity-0 invisible'"
     @click="backToTop"
   >
