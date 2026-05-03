@@ -94,8 +94,6 @@ function getContainerHeightClass(count) {
   return 'h-64 sm:h-72'
 }
 
-function noop() {}
-
 function ensureMusicPlaying() {
   const audio = audioRef.value
   if (!audio || !audio.paused) return
@@ -130,6 +128,14 @@ function ensureZoomUi() {
     })
     document.body.appendChild(zoomCloseEl)
   }
+}
+
+function onZoomClick(e) {
+  if (!zoom) return
+  const target = e?.currentTarget
+  if (!target) return
+  zoom.attach(target)
+  zoom.open({ target })
 }
 
 function loadImagesOnPage(pageElement) {
@@ -788,7 +794,7 @@ onBeforeUnmount(() => {
                           @mouseup.stop
                           @touchstart.stop
                           @touchend.stop
-                          @click.stop="noop"
+                          @click.stop="onZoomClick"
                           @error="(e) => (e.target.src = placeholderSrc)"
                         />
                       </div>
