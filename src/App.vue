@@ -118,11 +118,6 @@ function parseLrc(text) {
     if (!matches.length) continue
     const content = row.replace(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g, '').trim()
     if (!content) continue
-    if (
-      content.includes('【本音乐作品已获得正版授权】') ||
-      /^(曲|原唱|编曲|制作人|弦乐团|吉他|和声|混音\/母带|混音|母带|歌曲营销)\s*[:：]/.test(content)
-    )
-      continue
     for (const m of matches) {
       const min = Number(m[1] || 0)
       const sec = Number(m[2] || 0)
@@ -1117,18 +1112,16 @@ onBeforeUnmount(() => {
   </div>
 
   <div
-    v-if="immersiveActive && lyricReady && musicPlaying"
+    v-if="immersiveActive && lyricReady"
     class="fixed left-0 right-0 z-[85] pointer-events-none px-4"
     :style="{ bottom: `calc(${fabBottom}px + 4.5rem + env(safe-area-inset-bottom))` }"
   >
     <div class="mx-auto max-w-[92vw] text-center">
-      <div class="inline-block max-w-full bg-black/45 backdrop-blur-md rounded-2xl px-4 py-3">
-        <div class="text-white text-lg sm:text-xl font-semibold drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
-          {{ lyricLine }}
-        </div>
-        <div class="text-white/70 text-sm sm:text-base mt-2 drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
-          {{ nextLyricLine }}
-        </div>
+      <div class="text-white text-lg sm:text-xl font-semibold drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
+        {{ lyricLine }}
+      </div>
+      <div class="text-white/60 text-sm sm:text-base mt-2 drop-shadow-[0_6px_16px_rgba(0,0,0,0.45)] truncate">
+        {{ nextLyricLine }}
       </div>
     </div>
   </div>
