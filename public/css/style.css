@@ -340,13 +340,18 @@
         color: rgba(55, 65, 81, 0.75);
     }
 
-    #fab-dock {
-        right: calc(1rem + env(safe-area-inset-right));
-        bottom: calc(1rem + env(safe-area-inset-bottom));
+    #music-toggle {
+        bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        right: calc(1.5rem + env(safe-area-inset-right));
     }
-}
 
-#fab-dock {
-    right: 1.25rem;
-    bottom: 1.25rem;
+    #back-to-top {
+        bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        right: calc(5rem + env(safe-area-inset-right));
+    }
+
+    #immersive-toggle {
+        bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        left: calc(1.5rem + env(safe-area-inset-left));
+    }
 }
