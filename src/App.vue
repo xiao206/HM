@@ -109,7 +109,7 @@ function ensureZoomUi() {
   if (!zoomCaptionEl) {
     zoomCaptionEl = document.createElement('div')
     zoomCaptionEl.className =
-      'fixed left-0 right-0 bottom-0 text-center text-white text-base sm:text-lg font-medium bg-black/50 py-2 z-[9999] pointer-events-none'
+      'fixed left-0 right-0 top-0 text-center text-white text-base sm:text-lg font-medium bg-black/50 py-2 z-[9999] pointer-events-none'
     zoomCaptionEl.style.display = 'none'
     document.body.appendChild(zoomCaptionEl)
   }
