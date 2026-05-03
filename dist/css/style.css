@@ -327,3 +327,12 @@
         left: calc(1.5rem + env(safe-area-inset-left));
     }
 }
+
+.medium-zoom-overlay {
+    z-index: 9000 !important;
+}
+
+.medium-zoom-image--opened,
+.medium-zoom-image--open {
+    z-index: 9001 !important;
+}
