@@ -917,12 +917,12 @@ onBeforeUnmount(() => {
     @wheel.prevent
     @touchmove.prevent
   >
-    <div class="relative max-w-full max-h-full">
+    <div class="relative max-w-full max-h-full sm:max-w-[88vw] sm:max-h-[85vh]">
       <img
         id="lightbox-img"
         :src="lightboxSrc"
         alt="Enlarged image"
-        class="block max-w-full max-h-full rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
+        class="block max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-300 relative z-[61]"
       />
       <button
         id="lightbox-close"
