@@ -35,6 +35,7 @@ const endReelFading = ref(false)
 const reelRow1Duration = ref(36)
 const reelRow2Duration = ref(44)
 const reelRow3Duration = ref(52)
+const reelRow4Duration = ref(60)
 const easterEggAudioNeedsTap = ref(false)
 let easterEggPlaying = false
 let backToTopScrollHandler = null
@@ -73,12 +74,14 @@ function buildReelRow(groupIndex, groups = 3) {
   return row
 }
 
-const reelRow1 = buildReelRow(0)
-const reelRow2 = buildReelRow(1)
-const reelRow3 = buildReelRow(2)
+const reelRow1 = buildReelRow(0, 4)
+const reelRow2 = buildReelRow(1, 4)
+const reelRow3 = buildReelRow(2, 4)
+const reelRow4 = buildReelRow(3, 4)
 const reelCanvasRow1Ref = ref(null)
 const reelCanvasRow2Ref = ref(null)
 const reelCanvasRow3Ref = ref(null)
+const reelCanvasRow4Ref = ref(null)
 const reelCardW = ref(220)
 const reelCardH = ref(150)
 const reelGap = ref(18)
@@ -86,6 +89,7 @@ const reelRadius = ref(18)
 const reelRow1Distance = ref(0)
 const reelRow2Distance = ref(0)
 const reelRow3Distance = ref(0)
+const reelRow4Distance = ref(0)
 let reelPreparedKey = ''
 let reelPreparePromise = null
 const reelBitmapCache = new Map()
@@ -100,9 +104,11 @@ function computeReelDurations() {
   const c1 = Math.max(1, reelRow1.length)
   const c2 = Math.max(1, reelRow2.length)
   const c3 = Math.max(1, reelRow3.length)
+  const c4 = Math.max(1, reelRow4.length)
   reelRow1Duration.value = clamp(c1 * perImgSeconds, 14, 240)
   reelRow2Duration.value = clamp(c2 * perImgSeconds, 14, 240)
   reelRow3Duration.value = clamp(c3 * perImgSeconds, 14, 240)
+  reelRow4Duration.value = clamp(c4 * perImgSeconds, 14, 240)
 }
 
 function computeReelLayout() {
@@ -122,6 +128,7 @@ function computeReelLayout() {
   reelRow1Distance.value = reelRow1.length * (reelCardW.value + reelGap.value)
   reelRow2Distance.value = reelRow2.length * (reelCardW.value + reelGap.value)
   reelRow3Distance.value = reelRow3.length * (reelCardW.value + reelGap.value)
+  reelRow4Distance.value = reelRow4.length * (reelCardW.value + reelGap.value)
 }
 
 function roundRectPath(ctx, x, y, w, h, r) {
@@ -209,7 +216,7 @@ async function prepareEndReel() {
     computeReelLayout()
     computeReelDurations()
 
-    const key = `${reelCardW.value}x${reelCardH.value}:${reelGap.value}:${reelRow1.length}-${reelRow2.length}-${reelRow3.length}`
+    const key = `${reelCardW.value}x${reelCardH.value}:${reelGap.value}:${reelRow1.length}-${reelRow2.length}-${reelRow3.length}-${reelRow4.length}`
     if (key === reelPreparedKey) return
     reelPreparedKey = key
 
@@ -218,6 +225,7 @@ async function prepareEndReel() {
       drawReelRow(reelCanvasRow1Ref.value, reelRow1, reelRow1Distance.value),
       drawReelRow(reelCanvasRow2Ref.value, reelRow2, reelRow2Distance.value),
       drawReelRow(reelCanvasRow3Ref.value, reelRow3, reelRow3Distance.value),
+      drawReelRow(reelCanvasRow4Ref.value, reelRow4, reelRow4Distance.value),
     ])
   })().finally(() => {
     reelPreparePromise = null
@@ -880,6 +888,18 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <div class="hm-film-container" :style="{ height: `${reelCardH}px` }">
+      <div
+        class="hm-film-track hm-row4"
+        :style="{
+          '--hm-scroll-duration': `${reelRow4Duration}s`,
+          '--hm-scroll-distance': `${reelRow4Distance}px`,
+        }"
+      >
+        <canvas ref="reelCanvasRow4Ref" class="hm-reel-canvas"></canvas>
+      </div>
+    </div>
+
     <div class="hm-end-screen" :class="endReelShowEnd ? 'is-visible' : ''">
       <h2>THE END</h2>
     </div>
@@ -1007,6 +1027,10 @@ onBeforeUnmount(() => {
 }
 
 .hm-row3 {
+}
+
+.hm-row4 {
+  animation-direction: reverse;
 }
 
 @keyframes hmScroll {
