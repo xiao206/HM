@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && npx wrangler deploy"
+    "deploy": "npm run build && npx wrangler deploy",
+    "deploy:main": "node scripts/deploy.mjs",
+    "deploy:main:dry": "node scripts/deploy.mjs --dry-run"
   },
   "dependencies": {
     "medium-zoom": "^1.1.0",
