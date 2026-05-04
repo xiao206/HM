@@ -56,7 +56,7 @@ const { initZoom, onZoomClick, cleanupZoom } = useZoom({
 })
 
 const reelImages = posts
-  .map((p) => p?.images?.[0])
+  .flatMap((p) => (Array.isArray(p?.images) ? p.images : []))
   .filter(Boolean)
   .map(toPublicPath)
 
