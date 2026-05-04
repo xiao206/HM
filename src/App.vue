@@ -644,7 +644,7 @@ onBeforeUnmount(() => {
     <div class="hm-film-container">
       <div class="hm-film-track hm-row1" :style="{ '--hm-scroll-duration': `${reelRow1Duration}s` }">
         <div v-for="(src, i) in reelRow1" :key="`r1-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" />
+          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
         </div>
       </div>
     </div>
@@ -652,7 +652,7 @@ onBeforeUnmount(() => {
     <div class="hm-film-container">
       <div class="hm-film-track hm-row2" :style="{ '--hm-scroll-duration': `${reelRow2Duration}s` }">
         <div v-for="(src, i) in reelRow2" :key="`r2-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" />
+          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
         </div>
       </div>
     </div>
@@ -660,7 +660,7 @@ onBeforeUnmount(() => {
     <div class="hm-film-container">
       <div class="hm-film-track hm-row3" :style="{ '--hm-scroll-duration': `${reelRow3Duration}s` }">
         <div v-for="(src, i) in reelRow3" :key="`r3-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" />
+          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
         </div>
       </div>
     </div>
@@ -765,6 +765,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   width: 100%;
   padding: 12px 0;
+  contain: layout paint;
 }
 
 .hm-film-track {
@@ -772,7 +773,8 @@ onBeforeUnmount(() => {
   gap: 18px;
   width: max-content;
   animation: hmScroll var(--hm-scroll-duration, 36s) linear infinite;
-  filter: saturate(1.05) contrast(1.02);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .hm-row2 {
@@ -792,12 +794,14 @@ onBeforeUnmount(() => {
 }
 
 .hm-img-box img {
+  display: block;
   width: clamp(140px, 22vw, 220px);
   height: clamp(96px, 15vw, 150px);
   object-fit: cover;
   border-radius: 18px;
   box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
   border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .hm-end-screen {
@@ -848,7 +852,14 @@ onBeforeUnmount(() => {
     width: clamp(120px, 44vw, 170px);
     height: clamp(82px, 30vw, 120px);
     border-radius: 16px;
-    box-shadow: 0 12px 26px rgba(17, 24, 39, 0.14);
+    box-shadow: 0 10px 18px rgba(17, 24, 39, 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-film-track {
+    animation: none;
+    transform: none;
   }
 }
 </style>
