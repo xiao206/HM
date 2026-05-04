@@ -28,6 +28,7 @@ const fabBottom = ref(24)
 
 const audioRef = ref(null)
 const easterEggAudioRef = ref(null)
+const bgMusicVolume = 0.3
 const endReelVisible = ref(false)
 const endReelShowEnd = ref(false)
 const endReelFading = ref(false)
@@ -236,6 +237,7 @@ function stopEasterEggAudio() {
 
   const bg = audioRef.value
   if (eggPausedBgMusic && bg && bg.paused) {
+    bg.volume = bgMusicVolume
     bg.play()
       .then(() => {
         musicPlaying.value = true
@@ -243,6 +245,11 @@ function stopEasterEggAudio() {
       .catch(() => {})
   }
   eggPausedBgMusic = false
+}
+
+function applyBgMusicVolume() {
+  const bg = audioRef.value
+  if (bg) bg.volume = bgMusicVolume
 }
 
 async function playEasterEggAudio() {
@@ -317,6 +324,7 @@ function getContainerHeightClass(count) {
 function ensureMusicPlaying() {
   const audio = audioRef.value
   if (!audio || !audio.paused) return
+  applyBgMusicVolume()
   audio
     .play()
     .then(() => {
@@ -382,6 +390,7 @@ function toggleMusic() {
   const audio = audioRef.value
   if (!audio) return
   if (audio.paused) {
+    applyBgMusicVolume()
     audio
       .play()
       .then(() => {
@@ -494,6 +503,7 @@ function initMusicAutoPlayOnScroll() {
   let playedOnce = false
   firstMusicScrollHandler = throttle(() => {
     if (!playedOnce && audio.paused) {
+      applyBgMusicVolume()
       audio
         .play()
         .then(() => {
@@ -556,6 +566,7 @@ function cleanup() {
 onMounted(async () => {
   initLoadingOverlay()
   await nextTick()
+  applyBgMusicVolume()
   initPageFlip()
   initKeyboardNavigation()
   initMusicAutoPlayOnScroll()
