@@ -27,12 +27,14 @@ const immersiveActive = ref(false)
 const fabBottom = ref(24)
 
 const audioRef = ref(null)
+const easterEggAudioRef = ref(null)
 const endReelVisible = ref(false)
 const endReelShowEnd = ref(false)
 const endReelFading = ref(false)
 const reelRow1Duration = ref(36)
 const reelRow2Duration = ref(44)
 const reelRow3Duration = ref(52)
+const easterEggAudioNeedsTap = ref(false)
 let easterEggPlaying = false
 let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
@@ -40,6 +42,7 @@ let fullscreenChangeHandler = null
 let fabPositionHandler = null
 
 let endReelTimers = []
+let eggPausedBgMusic = false
 
 const { lyricLine, nextLyricLine, lyricReady, initLyrics, bindAudio: bindLyricsAudio, cleanupLyrics } = useLyrics({
   audioRef,
@@ -221,6 +224,51 @@ async function prepareEndReel() {
   return reelPreparePromise
 }
 
+function stopEasterEggAudio() {
+  const egg = easterEggAudioRef.value
+  if (egg) {
+    egg.pause()
+    try {
+      egg.currentTime = 0
+    } catch (_) {}
+  }
+  easterEggAudioNeedsTap.value = false
+
+  const bg = audioRef.value
+  if (eggPausedBgMusic && bg && bg.paused) {
+    bg.play()
+      .then(() => {
+        musicPlaying.value = true
+      })
+      .catch(() => {})
+  }
+  eggPausedBgMusic = false
+}
+
+async function playEasterEggAudio() {
+  easterEggAudioNeedsTap.value = false
+  const egg = easterEggAudioRef.value
+  if (!egg) return
+
+  const bg = audioRef.value
+  if (bg && !bg.paused) {
+    bg.pause()
+    musicPlaying.value = false
+    eggPausedBgMusic = true
+  }
+
+  try {
+    egg.volume = 0.3
+    egg.currentTime = 0
+  } catch (_) {}
+
+  try {
+    await egg.play()
+  } catch (_) {
+    easterEggAudioNeedsTap.value = true
+  }
+}
+
 function toPublicPath(p) {
   if (!p) return ''
   return p.startsWith('/') ? p : `/${p}`
@@ -284,6 +332,7 @@ async function triggerEasterEgg() {
   endReelVisible.value = true
   endReelShowEnd.value = false
   endReelFading.value = false
+  playEasterEggAudio()
 
   try {
     await prepareEndReel()
@@ -308,6 +357,7 @@ async function triggerEasterEgg() {
       endReelShowEnd.value = false
       endReelFading.value = false
       easterEggPlaying = false
+      stopEasterEggAudio()
     }, 18000),
   )
 }
@@ -477,6 +527,7 @@ function initFabPosition() {
 function cleanup() {
   if (endReelTimers.length) endReelTimers.forEach((t) => window.clearTimeout(t))
   endReelTimers = []
+  stopEasterEggAudio()
   for (const v of reelBitmapCache.values()) {
     if (v && typeof v.close === 'function') v.close()
   }
@@ -823,6 +874,14 @@ onBeforeUnmount(() => {
     </div>
   </div>
 
+  <button
+    v-if="endReelVisible && easterEggAudioNeedsTap"
+    class="fixed left-1/2 -translate-x-1/2 bottom-8 sm:bottom-10 z-[130] pointer-events-auto px-4 py-2 rounded-full bg-white/80 backdrop-blur text-gray-900 shadow-lg border border-black/5 text-sm font-medium"
+    @click="playEasterEggAudio"
+  >
+    点一下播放彩蛋音乐
+  </button>
+
   <div
     v-if="immersiveActive && lyricReady"
     class="fixed left-0 right-0 z-[85] pointer-events-none px-4"
@@ -840,6 +899,9 @@ onBeforeUnmount(() => {
 
   <audio id="bg-music" ref="audioRef" loop>
     <source src="/yesterday.mp3" type="audio/mpeg" />
+  </audio>
+  <audio id="easter-egg-music" ref="easterEggAudioRef" preload="auto">
+    <source src="/easteregg.mp3" type="audio/mpeg" />
   </audio>
   <button
     id="music-toggle"
