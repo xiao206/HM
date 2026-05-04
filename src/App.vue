@@ -30,6 +30,9 @@ const audioRef = ref(null)
 const endReelVisible = ref(false)
 const endReelShowEnd = ref(false)
 const endReelFading = ref(false)
+const reelRow1Duration = ref(36)
+const reelRow2Duration = ref(44)
+const reelRow3Duration = ref(52)
 let easterEggPlaying = false
 let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
@@ -69,6 +72,21 @@ function buildReelRow(groupIndex, groups = 3) {
 const reelRow1 = buildReelRow(0)
 const reelRow2 = buildReelRow(1)
 const reelRow3 = buildReelRow(2)
+
+function clamp(n, min, max) {
+  return Math.min(max, Math.max(min, n))
+}
+
+function computeReelDurations() {
+  const w = typeof window !== 'undefined' ? window.innerWidth : 1024
+  const perImgSeconds = w < 640 ? 0.55 : 0.75
+  const c1 = Math.max(1, Math.floor(reelRow1.length / 2))
+  const c2 = Math.max(1, Math.floor(reelRow2.length / 2))
+  const c3 = Math.max(1, Math.floor(reelRow3.length / 2))
+  reelRow1Duration.value = clamp(c1 * perImgSeconds, 14, 240)
+  reelRow2Duration.value = clamp(c2 * perImgSeconds, 14, 240)
+  reelRow3Duration.value = clamp(c3 * perImgSeconds, 14, 240)
+}
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -130,6 +148,7 @@ function triggerEasterEgg() {
   if (easterEggPlaying) return
   easterEggPlaying = true
 
+  computeReelDurations()
   endReelVisible.value = true
   endReelShowEnd.value = false
   endReelFading.value = false
@@ -623,7 +642,7 @@ onBeforeUnmount(() => {
     <p class="hm-subtitle">Nothing lasts. But this did.</p>
 
     <div class="hm-film-container">
-      <div class="hm-film-track hm-row1">
+      <div class="hm-film-track hm-row1" :style="{ '--hm-scroll-duration': `${reelRow1Duration}s` }">
         <div v-for="(src, i) in reelRow1" :key="`r1-${i}-${src}`" class="hm-img-box">
           <img :src="src" alt="" />
         </div>
@@ -631,7 +650,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="hm-film-container">
-      <div class="hm-film-track hm-row2">
+      <div class="hm-film-track hm-row2" :style="{ '--hm-scroll-duration': `${reelRow2Duration}s` }">
         <div v-for="(src, i) in reelRow2" :key="`r2-${i}-${src}`" class="hm-img-box">
           <img :src="src" alt="" />
         </div>
@@ -639,7 +658,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="hm-film-container">
-      <div class="hm-film-track hm-row3">
+      <div class="hm-film-track hm-row3" :style="{ '--hm-scroll-duration': `${reelRow3Duration}s` }">
         <div v-for="(src, i) in reelRow3" :key="`r3-${i}-${src}`" class="hm-img-box">
           <img :src="src" alt="" />
         </div>
@@ -699,6 +718,10 @@ onBeforeUnmount(() => {
   z-index: 120;
   pointer-events: none;
   opacity: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 0 calc(24px + env(safe-area-inset-bottom));
 }
 
 .hm-end-reel.is-fading {
@@ -748,17 +771,15 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 18px;
   width: max-content;
-  animation: hmScroll 36s linear infinite;
+  animation: hmScroll var(--hm-scroll-duration, 36s) linear infinite;
   filter: saturate(1.05) contrast(1.02);
 }
 
 .hm-row2 {
   animation-direction: reverse;
-  animation-duration: 44s;
 }
 
 .hm-row3 {
-  animation-duration: 52s;
 }
 
 @keyframes hmScroll {
@@ -801,5 +822,33 @@ onBeforeUnmount(() => {
   letter-spacing: 0.28em;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans SC', sans-serif;
   font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .hm-title {
+    margin: 18px 0 6px;
+    font-size: 16px;
+    letter-spacing: 0.22em;
+  }
+
+  .hm-subtitle {
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .hm-film-container {
+    padding: 10px 0;
+  }
+
+  .hm-film-track {
+    gap: 12px;
+  }
+
+  .hm-img-box img {
+    width: clamp(120px, 44vw, 170px);
+    height: clamp(82px, 30vw, 120px);
+    border-radius: 16px;
+    box-shadow: 0 12px 26px rgba(17, 24, 39, 0.14);
+  }
 }
 </style>
