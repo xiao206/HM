@@ -27,15 +27,16 @@ const immersiveActive = ref(false)
 const fabBottom = ref(24)
 
 const audioRef = ref(null)
-const fireworksContainerRef = ref(null)
-const easterEggMessageRef = ref(null)
-
-let bubbleInterval = null
+const endReelVisible = ref(false)
+const endReelShowEnd = ref(false)
+const endReelFading = ref(false)
 let easterEggPlaying = false
 let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
 let fullscreenChangeHandler = null
 let fabPositionHandler = null
+
+let endReelTimers = []
 
 const { lyricLine, nextLyricLine, lyricReady, initLyrics, bindAudio: bindLyricsAudio, cleanupLyrics } = useLyrics({
   audioRef,
@@ -53,6 +54,24 @@ const { initZoom, onZoomClick, cleanupZoom } = useZoom({
   throttle,
   ensureMusicPlaying,
 })
+
+const reelImages = posts
+  .map((p) => p?.images?.[0])
+  .filter(Boolean)
+  .map(toPublicPath)
+
+function buildReelRow(offset, count = 10) {
+  if (!reelImages.length) return []
+  const row = []
+  for (let i = 0; i < count; i += 1) {
+    row.push(reelImages[(offset + i) % reelImages.length])
+  }
+  return row.concat(row)
+}
+
+const reelRow1 = buildReelRow(0)
+const reelRow2 = buildReelRow(3)
+const reelRow3 = buildReelRow(6)
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -114,66 +133,31 @@ function triggerEasterEgg() {
   if (easterEggPlaying) return
   easterEggPlaying = true
 
-  const message = easterEggMessageRef.value || document.getElementById('easter-egg-message')
-  const container = fireworksContainerRef.value || document.getElementById('fireworks-container')
-  if (!message || !container) {
-    easterEggPlaying = false
-    return
-  }
+  endReelVisible.value = true
+  endReelShowEnd.value = false
+  endReelFading.value = false
 
-  message.style.opacity = '1'
-  container.style.opacity = '1'
+  if (endReelTimers.length) endReelTimers.forEach((t) => window.clearTimeout(t))
+  endReelTimers = []
 
-  const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#facc15', '#a3e635', '#fb7185']
-
-  const createBubble = () => {
-    const bubble = document.createElement('div')
-    const size = Math.random() * 30 + 15
-    bubble.classList.add('absolute', 'rounded-full', 'opacity-80', 'mix-blend-multiply')
-    bubble.style.width = `${size}px`
-    bubble.style.height = `${size}px`
-    bubble.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
-    bubble.style.left = `${Math.random() * 100}vw`
-    bubble.style.bottom = '-60px'
-    container.appendChild(bubble)
-
-    const duration = Math.random() * 3000 + 2000
-    const sway = Math.random() * 80 - 40
-
-    const animation = bubble.animate(
-      [
-        { transform: 'translate(0, 0) scale(0.5)', opacity: 0 },
-        {
-          transform: `translate(${sway * 0.2}px, -30vh) scale(1)`,
-          opacity: 0.8,
-          offset: 0.2,
-        },
-        { transform: `translate(${sway}px, -90vh) scale(1.2)`, opacity: 0 },
-      ],
-      { duration, easing: 'ease-out' },
-    )
-
-    animation.onfinish = () => {
-      if (bubble.parentNode) bubble.parentNode.removeChild(bubble)
-    }
-  }
-
-  let count = 0
-  bubbleInterval = setInterval(() => {
-    createBubble()
-    count += 1
-    if (count > 30) {
-      if (bubbleInterval) {
-        clearInterval(bubbleInterval)
-        bubbleInterval = null
-      }
-      setTimeout(() => {
-        message.style.opacity = '0'
-        container.style.opacity = '0'
-        easterEggPlaying = false
-      }, 3000)
-    }
-  }, 100)
+  endReelTimers.push(
+    window.setTimeout(() => {
+      endReelShowEnd.value = true
+    }, 8000),
+  )
+  endReelTimers.push(
+    window.setTimeout(() => {
+      endReelFading.value = true
+    }, 14000),
+  )
+  endReelTimers.push(
+    window.setTimeout(() => {
+      endReelVisible.value = false
+      endReelShowEnd.value = false
+      endReelFading.value = false
+      easterEggPlaying = false
+    }, 18000),
+  )
 }
 
 function openAboutModal() {
@@ -339,8 +323,8 @@ function initFabPosition() {
 }
 
 function cleanup() {
-  if (bubbleInterval) clearInterval(bubbleInterval)
-  bubbleInterval = null
+  if (endReelTimers.length) endReelTimers.forEach((t) => window.clearTimeout(t))
+  endReelTimers = []
 
   if (backToTopScrollHandler) window.removeEventListener('scroll', backToTopScrollHandler)
   backToTopScrollHandler = null
@@ -636,29 +620,38 @@ onBeforeUnmount(() => {
     <p class="text-gray-600 font-medium animate-pulse">正在加载美好回忆...</p>
   </div>
 
-  <div
-    id="fireworks-container"
-    ref="fireworksContainerRef"
-    v-once
-    class="fixed inset-0 pointer-events-none z-40 overflow-hidden bg-gradient-to-t from-white/90 via-white/50 to-transparent opacity-0 transition-opacity duration-1000"
-    style="opacity: 0"
-  ></div>
-  <div
-    id="easter-egg-message"
-    ref="easterEggMessageRef"
-    v-once
-    class="fixed bottom-32 sm:bottom-32 left-0 right-0 text-center text-3xl sm:text-5xl font-normal text-gray-800 opacity-0 transition-opacity duration-1000 z-50 pointer-events-none drop-shadow-lg px-4"
-    style="
-      font-family: 'Playfair Display', serif;
-      letter-spacing: 0.1em;
-      text-shadow: 0 4px 6px rgba(255, 255, 255, 0.8);
-      opacity: 0;
-    "
-  >
-    To be continued...<br />
-    <span class="text-lg sm:text-2xl mt-4 block font-sans text-gray-600 font-medium tracking-widest"
-      >我们的故事，未完待续</span
-    >
+  <div v-if="endReelVisible" class="hm-end-reel" :class="endReelFading ? 'is-fading' : ''">
+    <div class="hm-noise"></div>
+    <h1 class="hm-title">MEMORY ARCHIVE</h1>
+    <p class="hm-subtitle">Nothing lasts. But this did.</p>
+
+    <div class="hm-film-container">
+      <div class="hm-film-track hm-row1">
+        <div v-for="(src, i) in reelRow1" :key="`r1-${i}-${src}`" class="hm-img-box">
+          <img :src="src" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div class="hm-film-container">
+      <div class="hm-film-track hm-row2">
+        <div v-for="(src, i) in reelRow2" :key="`r2-${i}-${src}`" class="hm-img-box">
+          <img :src="src" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div class="hm-film-container">
+      <div class="hm-film-track hm-row3">
+        <div v-for="(src, i) in reelRow3" :key="`r3-${i}-${src}`" class="hm-img-box">
+          <img :src="src" alt="" />
+        </div>
+      </div>
+    </div>
+
+    <div class="hm-end-screen" :class="endReelShowEnd ? 'is-visible' : ''">
+      <h2>THE END</h2>
+    </div>
   </div>
 
   <div
@@ -698,3 +691,113 @@ onBeforeUnmount(() => {
     <i class="fas fa-arrow-up"></i>
   </button>
 </template>
+
+<style>
+.hm-end-reel {
+  position: fixed;
+  inset: 0;
+  background: #0b0b0b;
+  color: #f5f1e6;
+  overflow: hidden;
+  z-index: 120;
+  pointer-events: none;
+  opacity: 1;
+}
+
+.hm-end-reel.is-fading {
+  opacity: 0;
+  transition: opacity 4s ease;
+}
+
+.hm-noise {
+  position: fixed;
+  inset: 0;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+.hm-title {
+  position: relative;
+  z-index: 2;
+  margin: 28px 0 8px;
+  text-align: center;
+  letter-spacing: 0.28em;
+  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 20px;
+}
+
+.hm-subtitle {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: #c2b8a3;
+  font-style: italic;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.hm-film-container {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  width: 100%;
+  padding: 12px 0;
+}
+
+.hm-film-track {
+  display: flex;
+  gap: 18px;
+  width: max-content;
+  animation: hmScroll 80s linear infinite;
+  filter: sepia(0.65) contrast(1.1) brightness(0.85);
+}
+
+.hm-row2 {
+  animation-direction: reverse;
+  animation-duration: 100s;
+}
+
+.hm-row3 {
+  animation-duration: 120s;
+}
+
+@keyframes hmScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hm-img-box img {
+  width: clamp(140px, 22vw, 220px);
+  height: clamp(96px, 15vw, 150px);
+  object-fit: cover;
+  border: 6px solid #000;
+}
+
+.hm-end-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 1400ms ease;
+}
+
+.hm-end-screen.is-visible {
+  opacity: 1;
+}
+
+.hm-end-screen h2 {
+  font-size: clamp(34px, 6vw, 44px);
+  letter-spacing: 0.28em;
+  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+</style>
