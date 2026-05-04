@@ -66,12 +66,25 @@ const reelImages = posts
 function buildReelRow(groupIndex, groups = 3) {
   if (!reelImages.length) return []
   const row = reelImages.filter((_, i) => i % groups === groupIndex)
-  return row.length ? row.concat(row) : []
+  return row
 }
 
 const reelRow1 = buildReelRow(0)
 const reelRow2 = buildReelRow(1)
 const reelRow3 = buildReelRow(2)
+const reelCanvasRow1Ref = ref(null)
+const reelCanvasRow2Ref = ref(null)
+const reelCanvasRow3Ref = ref(null)
+const reelCardW = ref(220)
+const reelCardH = ref(150)
+const reelGap = ref(18)
+const reelRadius = ref(18)
+const reelRow1Distance = ref(0)
+const reelRow2Distance = ref(0)
+const reelRow3Distance = ref(0)
+let reelPreparedKey = ''
+let reelPreparePromise = null
+const reelBitmapCache = new Map()
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, n))
@@ -80,12 +93,132 @@ function clamp(n, min, max) {
 function computeReelDurations() {
   const w = typeof window !== 'undefined' ? window.innerWidth : 1024
   const perImgSeconds = w < 640 ? 0.55 : 0.75
-  const c1 = Math.max(1, Math.floor(reelRow1.length / 2))
-  const c2 = Math.max(1, Math.floor(reelRow2.length / 2))
-  const c3 = Math.max(1, Math.floor(reelRow3.length / 2))
+  const c1 = Math.max(1, reelRow1.length)
+  const c2 = Math.max(1, reelRow2.length)
+  const c3 = Math.max(1, reelRow3.length)
   reelRow1Duration.value = clamp(c1 * perImgSeconds, 14, 240)
   reelRow2Duration.value = clamp(c2 * perImgSeconds, 14, 240)
   reelRow3Duration.value = clamp(c3 * perImgSeconds, 14, 240)
+}
+
+function computeReelLayout() {
+  const w = typeof window !== 'undefined' ? window.innerWidth : 1024
+  if (w < 640) {
+    reelCardW.value = 170
+    reelCardH.value = 120
+    reelGap.value = 12
+    reelRadius.value = 16
+  } else {
+    reelCardW.value = 220
+    reelCardH.value = 150
+    reelGap.value = 18
+    reelRadius.value = 18
+  }
+
+  reelRow1Distance.value = reelRow1.length * (reelCardW.value + reelGap.value)
+  reelRow2Distance.value = reelRow2.length * (reelCardW.value + reelGap.value)
+  reelRow3Distance.value = reelRow3.length * (reelCardW.value + reelGap.value)
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, Math.min(w, h) / 2))
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
+}
+
+async function loadBitmap(src, tw, th) {
+  const key = `${src}|${tw}x${th}`
+  if (reelBitmapCache.has(key)) return reelBitmapCache.get(key)
+
+  const img = new Image()
+  img.decoding = 'async'
+  img.loading = 'eager'
+  await new Promise((resolve) => {
+    img.onload = resolve
+    img.onerror = resolve
+    img.src = src
+  })
+
+  let bmp = img
+  if (typeof createImageBitmap === 'function') {
+    try {
+      bmp = await createImageBitmap(img, {
+        resizeWidth: tw,
+        resizeHeight: th,
+        resizeQuality: 'low',
+      })
+    } catch (_) {}
+  }
+
+  reelBitmapCache.set(key, bmp)
+  return bmp
+}
+
+async function drawReelRow(canvasEl, row, distance) {
+  if (!canvasEl) return
+  const cardW = reelCardW.value
+  const cardH = reelCardH.value
+  const gap = reelGap.value
+  const radius = reelRadius.value
+  const stripW = Math.max(1, distance)
+  const cssW = stripW * 2
+
+  let dpr = clamp(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 1, 2)
+  const maxCanvas = 16384
+  if (cssW * dpr > maxCanvas) dpr = Math.max(1, Math.floor((maxCanvas / cssW) * 100) / 100)
+
+  canvasEl.width = Math.floor(cssW * dpr)
+  canvasEl.height = Math.floor(cardH * dpr)
+  canvasEl.style.width = `${cssW}px`
+  canvasEl.style.height = `${cardH}px`
+
+  const ctx = canvasEl.getContext('2d')
+  if (!ctx) return
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, cssW, cardH)
+
+  const tw = Math.max(1, Math.floor(cardW * dpr))
+  const th = Math.max(1, Math.floor(cardH * dpr))
+  const bitmaps = await Promise.all(row.map((src) => loadBitmap(src, tw, th)))
+
+  for (let rep = 0; rep < 2; rep += 1) {
+    const baseX = rep * stripW
+    for (let i = 0; i < bitmaps.length; i += 1) {
+      const x = baseX + i * (cardW + gap)
+      ctx.save()
+      roundRectPath(ctx, x, 0, cardW, cardH, radius)
+      ctx.clip()
+      ctx.drawImage(bitmaps[i], x, 0, cardW, cardH)
+      ctx.restore()
+    }
+  }
+}
+
+async function prepareEndReel() {
+  if (reelPreparePromise) return reelPreparePromise
+  reelPreparePromise = (async () => {
+    computeReelLayout()
+    computeReelDurations()
+
+    const key = `${reelCardW.value}x${reelCardH.value}:${reelGap.value}:${reelRow1.length}-${reelRow2.length}-${reelRow3.length}`
+    if (key === reelPreparedKey) return
+    reelPreparedKey = key
+
+    await nextTick()
+    await Promise.all([
+      drawReelRow(reelCanvasRow1Ref.value, reelRow1, reelRow1Distance.value),
+      drawReelRow(reelCanvasRow2Ref.value, reelRow2, reelRow2Distance.value),
+      drawReelRow(reelCanvasRow3Ref.value, reelRow3, reelRow3Distance.value),
+    ])
+  })().finally(() => {
+    reelPreparePromise = null
+  })
+  return reelPreparePromise
 }
 
 function toPublicPath(p) {
@@ -144,14 +277,17 @@ function ensureMusicPlaying() {
     .catch(() => {})
 }
 
-function triggerEasterEgg() {
+async function triggerEasterEgg() {
   if (easterEggPlaying) return
   easterEggPlaying = true
 
-  computeReelDurations()
   endReelVisible.value = true
   endReelShowEnd.value = false
   endReelFading.value = false
+
+  try {
+    await prepareEndReel()
+  } catch (_) {}
 
   if (endReelTimers.length) endReelTimers.forEach((t) => window.clearTimeout(t))
   endReelTimers = []
@@ -341,6 +477,10 @@ function initFabPosition() {
 function cleanup() {
   if (endReelTimers.length) endReelTimers.forEach((t) => window.clearTimeout(t))
   endReelTimers = []
+  for (const v of reelBitmapCache.values()) {
+    if (v && typeof v.close === 'function') v.close()
+  }
+  reelBitmapCache.clear()
 
   if (backToTopScrollHandler) window.removeEventListener('scroll', backToTopScrollHandler)
   backToTopScrollHandler = null
@@ -404,6 +544,7 @@ onBeforeUnmount(() => {
     <div
       id="book-container"
       ref="bookContainerRef"
+      :style="endReelVisible ? { visibility: 'hidden' } : {}"
       :class="
         immersiveActive
           ? 'fixed inset-0 flex justify-center items-center w-full max-w-none h-[100svh] z-[70] bg-gray-100'
@@ -636,32 +777,44 @@ onBeforeUnmount(() => {
     <p class="text-gray-600 font-medium animate-pulse">正在加载美好回忆...</p>
   </div>
 
-  <div v-if="endReelVisible" class="hm-end-reel" :class="endReelFading ? 'is-fading' : ''">
+  <div v-show="endReelVisible" class="hm-end-reel" :class="endReelFading ? 'is-fading' : ''">
     <div class="hm-noise"></div>
     <h1 class="hm-title">MEMORY ARCHIVE</h1>
     <p class="hm-subtitle">Nothing lasts. But this did.</p>
 
-    <div class="hm-film-container">
-      <div class="hm-film-track hm-row1" :style="{ '--hm-scroll-duration': `${reelRow1Duration}s` }">
-        <div v-for="(src, i) in reelRow1" :key="`r1-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
-        </div>
+    <div class="hm-film-container" :style="{ height: `${reelCardH}px` }">
+      <div
+        class="hm-film-track hm-row1"
+        :style="{
+          '--hm-scroll-duration': `${reelRow1Duration}s`,
+          '--hm-scroll-distance': `${reelRow1Distance}px`,
+        }"
+      >
+        <canvas ref="reelCanvasRow1Ref" class="hm-reel-canvas"></canvas>
       </div>
     </div>
 
-    <div class="hm-film-container">
-      <div class="hm-film-track hm-row2" :style="{ '--hm-scroll-duration': `${reelRow2Duration}s` }">
-        <div v-for="(src, i) in reelRow2" :key="`r2-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
-        </div>
+    <div class="hm-film-container" :style="{ height: `${reelCardH}px` }">
+      <div
+        class="hm-film-track hm-row2"
+        :style="{
+          '--hm-scroll-duration': `${reelRow2Duration}s`,
+          '--hm-scroll-distance': `${reelRow2Distance}px`,
+        }"
+      >
+        <canvas ref="reelCanvasRow2Ref" class="hm-reel-canvas"></canvas>
       </div>
     </div>
 
-    <div class="hm-film-container">
-      <div class="hm-film-track hm-row3" :style="{ '--hm-scroll-duration': `${reelRow3Duration}s` }">
-        <div v-for="(src, i) in reelRow3" :key="`r3-${i}-${src}`" class="hm-img-box">
-          <img :src="src" alt="" loading="lazy" decoding="async" fetchpriority="low" width="220" height="150" />
-        </div>
+    <div class="hm-film-container" :style="{ height: `${reelCardH}px` }">
+      <div
+        class="hm-film-track hm-row3"
+        :style="{
+          '--hm-scroll-duration': `${reelRow3Duration}s`,
+          '--hm-scroll-distance': `${reelRow3Distance}px`,
+        }"
+      >
+        <canvas ref="reelCanvasRow3Ref" class="hm-reel-canvas"></canvas>
       </div>
     </div>
 
@@ -769,8 +922,7 @@ onBeforeUnmount(() => {
 }
 
 .hm-film-track {
-  display: flex;
-  gap: 18px;
+  display: block;
   width: max-content;
   animation: hmScroll var(--hm-scroll-duration, 36s) linear infinite;
   transform: translateZ(0);
@@ -789,19 +941,13 @@ onBeforeUnmount(() => {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-50%);
+    transform: translateX(calc(-1 * var(--hm-scroll-distance, 1000px)));
   }
 }
 
-.hm-img-box img {
+.hm-reel-canvas {
   display: block;
-  width: clamp(140px, 22vw, 220px);
-  height: clamp(96px, 15vw, 150px);
-  object-fit: cover;
-  border-radius: 18px;
-  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
-  border: 1px solid rgba(17, 24, 39, 0.08);
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .hm-end-screen {
@@ -811,7 +957,6 @@ onBeforeUnmount(() => {
   justify-content: center;
   align-items: center;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(10px);
   z-index: 3;
   opacity: 0;
   transition: opacity 1400ms ease;
@@ -842,17 +987,6 @@ onBeforeUnmount(() => {
 
   .hm-film-container {
     padding: 10px 0;
-  }
-
-  .hm-film-track {
-    gap: 12px;
-  }
-
-  .hm-img-box img {
-    width: clamp(120px, 44vw, 170px);
-    height: clamp(82px, 30vw, 120px);
-    border-radius: 16px;
-    box-shadow: 0 10px 18px rgba(17, 24, 39, 0.12);
   }
 }
 
