@@ -118,8 +118,8 @@ function triggerEasterEgg() {
   const container = fireworksContainerRef.value
   if (!message || !container) return
 
-  message.classList.remove('opacity-0')
-  container.classList.remove('opacity-0')
+  message.style.opacity = '1'
+  container.style.opacity = '1'
 
   const colors = ['#f472b6', '#60a5fa', '#a78bfa', '#facc15', '#a3e635', '#fb7185']
 
@@ -165,8 +165,8 @@ function triggerEasterEgg() {
         bubbleInterval = null
       }
       setTimeout(() => {
-        message.classList.add('opacity-0')
-        container.classList.add('opacity-0')
+        message.style.opacity = '0'
+        container.style.opacity = '0'
         easterEggPlaying = false
       }, 3000)
     }
@@ -637,6 +637,7 @@ onBeforeUnmount(() => {
     id="fireworks-container"
     ref="fireworksContainerRef"
     class="fixed inset-0 pointer-events-none z-40 overflow-hidden bg-gradient-to-t from-white/90 via-white/50 to-transparent opacity-0 transition-opacity duration-1000"
+    style="opacity: 0"
   ></div>
   <div
     id="easter-egg-message"
@@ -646,6 +647,7 @@ onBeforeUnmount(() => {
       font-family: 'Playfair Display', serif;
       letter-spacing: 0.1em;
       text-shadow: 0 4px 6px rgba(255, 255, 255, 0.8);
+      opacity: 0;
     "
   >
     To be continued...<br />
