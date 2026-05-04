@@ -60,18 +60,15 @@ const reelImages = posts
   .filter(Boolean)
   .map(toPublicPath)
 
-function buildReelRow(offset, count = 10) {
+function buildReelRow(groupIndex, groups = 3) {
   if (!reelImages.length) return []
-  const row = []
-  for (let i = 0; i < count; i += 1) {
-    row.push(reelImages[(offset + i) % reelImages.length])
-  }
-  return row.concat(row)
+  const row = reelImages.filter((_, i) => i % groups === groupIndex)
+  return row.length ? row.concat(row) : []
 }
 
 const reelRow1 = buildReelRow(0)
-const reelRow2 = buildReelRow(3)
-const reelRow3 = buildReelRow(6)
+const reelRow2 = buildReelRow(1)
+const reelRow3 = buildReelRow(2)
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -696,8 +693,8 @@ onBeforeUnmount(() => {
 .hm-end-reel {
   position: fixed;
   inset: 0;
-  background: #0b0b0b;
-  color: #f5f1e6;
+  background: radial-gradient(1200px circle at 20% 10%, #ffffff 0%, #f5f3ff 34%, #eaf2ff 68%, #fff7ed 100%);
+  color: #111827;
   overflow: hidden;
   z-index: 120;
   pointer-events: none;
@@ -712,7 +709,7 @@ onBeforeUnmount(() => {
 .hm-noise {
   position: fixed;
   inset: 0;
-  opacity: 0.1;
+  opacity: 0.04;
   pointer-events: none;
   z-index: 1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
@@ -724,15 +721,16 @@ onBeforeUnmount(() => {
   margin: 28px 0 8px;
   text-align: center;
   letter-spacing: 0.28em;
-  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 20px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans SC', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
 }
 
 .hm-subtitle {
   position: relative;
   z-index: 2;
   text-align: center;
-  color: #c2b8a3;
+  color: rgba(17, 24, 39, 0.6);
   font-style: italic;
   margin-bottom: 18px;
   font-size: 14px;
@@ -750,17 +748,17 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 18px;
   width: max-content;
-  animation: hmScroll 80s linear infinite;
-  filter: sepia(0.65) contrast(1.1) brightness(0.85);
+  animation: hmScroll 36s linear infinite;
+  filter: saturate(1.05) contrast(1.02);
 }
 
 .hm-row2 {
   animation-direction: reverse;
-  animation-duration: 100s;
+  animation-duration: 44s;
 }
 
 .hm-row3 {
-  animation-duration: 120s;
+  animation-duration: 52s;
 }
 
 @keyframes hmScroll {
@@ -776,7 +774,9 @@ onBeforeUnmount(() => {
   width: clamp(140px, 22vw, 220px);
   height: clamp(96px, 15vw, 150px);
   object-fit: cover;
-  border: 6px solid #000;
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
+  border: 1px solid rgba(17, 24, 39, 0.08);
 }
 
 .hm-end-screen {
@@ -785,7 +785,8 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
   z-index: 3;
   opacity: 0;
   transition: opacity 1400ms ease;
@@ -798,6 +799,7 @@ onBeforeUnmount(() => {
 .hm-end-screen h2 {
   font-size: clamp(34px, 6vw, 44px);
   letter-spacing: 0.28em;
-  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans SC', sans-serif;
+  font-weight: 800;
 }
 </style>
