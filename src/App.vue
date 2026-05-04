@@ -1,8 +1,10 @@
 <script setup>
-import mediumZoom from 'medium-zoom'
 import 'medium-zoom/dist/style.css'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import postsData from './data/posts'
+import { useLyrics } from './composables/useLyrics'
+import { usePageFlip } from './composables/usePageFlip'
+import { useZoom } from './composables/useZoom'
 
 const posts = postsData
   .slice()
@@ -27,39 +29,30 @@ const fabBottom = ref(24)
 const audioRef = ref(null)
 const fireworksContainerRef = ref(null)
 const easterEggMessageRef = ref(null)
-const lyricLine = ref('')
-const nextLyricLine = ref('')
-const lyricReady = ref(false)
 
-let pageFlip = null
 let bubbleInterval = null
 let easterEggPlaying = false
 let backToTopScrollHandler = null
 let firstMusicScrollHandler = null
-let keydownHandler = null
 let fullscreenChangeHandler = null
 let fabPositionHandler = null
-let tapToFlipDownHandler = null
-let tapToFlipMoveHandler = null
-let tapToFlipUpHandler = null
-let tapToFlipCancelHandler = null
-let tapToFlipTouchStartHandler = null
-let tapToFlipTouchMoveHandler = null
-let tapToFlipTouchEndHandler = null
-let tapToFlipTouchCancelHandler = null
-let tapToFlipStart = null
-let tapToFlipInput = null
-let zoom = null
-let zoomCaptionEl = null
-let zoomCloseEl = null
-let zoomCaptionPositionHandler = null
-let preloadChain = Promise.resolve()
-let preloadTimers = []
-let lrcLines = []
-let lyricRaf = null
-let lyricTimeUpdateHandler = null
-let lyricSeekedHandler = null
-let lyricPlayHandler = null
+
+const { lyricLine, nextLyricLine, lyricReady, initLyrics, bindAudio: bindLyricsAudio, cleanupLyrics } = useLyrics({
+  audioRef,
+})
+
+const { initPageFlip, initTapToFlip, initKeyboardNavigation, cleanupPageFlip } = usePageFlip({
+  bookRef,
+  bookContainerRef,
+  posts,
+  triggerEasterEgg,
+})
+
+const { initZoom, onZoomClick, cleanupZoom } = useZoom({
+  selector: 'img[data-zoomable="true"]',
+  throttle,
+  ensureMusicPlaying,
+})
 
 function toPublicPath(p) {
   if (!p) return ''
@@ -90,93 +83,6 @@ function throttle(func, limit) {
   }
 }
 
-function runWhenIdle(fn, timeout) {
-  const ric = window.requestIdleCallback
-  if (typeof ric === 'function') return ric(fn, { timeout })
-  const handle = window.setTimeout(() => fn({ didTimeout: true, timeRemaining: () => 0 }), Math.min(timeout, 200))
-  return handle
-}
-
-function enqueuePreload(pageEl) {
-  if (!pageEl) return
-  preloadChain = preloadChain.then(
-    () =>
-      new Promise((resolve) => {
-        runWhenIdle(() => {
-          loadImagesOnPage(pageEl)
-          resolve()
-        }, 1500)
-      }),
-  )
-}
-
-function parseLrc(text) {
-  const lines = []
-  const rows = String(text || '').split(/\r?\n/)
-  for (const row of rows) {
-    const matches = [...row.matchAll(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g)]
-    if (!matches.length) continue
-    const content = row.replace(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g, '').trim()
-    if (!content) continue
-    for (const m of matches) {
-      const min = Number(m[1] || 0)
-      const sec = Number(m[2] || 0)
-      const msRaw = (m[3] || '').padEnd(3, '0')
-      const ms = Number(msRaw || 0)
-      const t = min * 60 + sec + ms / 1000
-      lines.push({ t, text: content })
-    }
-  }
-  lines.sort((a, b) => a.t - b.t)
-  const deduped = []
-  for (const line of lines) {
-    const prev = deduped[deduped.length - 1]
-    if (prev && Math.abs(prev.t - line.t) < 0.001) continue
-    deduped.push(line)
-  }
-  return deduped
-}
-
-function findLyricIndex(time) {
-  if (!lrcLines.length) return -1
-  let lo = 0
-  let hi = lrcLines.length - 1
-  if (time < lrcLines[0].t) return -1
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1
-    if (lrcLines[mid].t <= time) lo = mid + 1
-    else hi = mid - 1
-  }
-  return Math.max(-1, lo - 1)
-}
-
-function updateLyricLines(time) {
-  const idx = findLyricIndex(time)
-  lyricLine.value = idx >= 0 ? lrcLines[idx]?.text || '' : ''
-  nextLyricLine.value = idx >= 0 ? lrcLines[idx + 1]?.text || '' : lrcLines[0]?.text || ''
-}
-
-function scheduleLyricUpdate() {
-  if (lyricRaf) return
-  lyricRaf = window.requestAnimationFrame(() => {
-    lyricRaf = null
-    const audio = audioRef.value
-    if (!audio) return
-    updateLyricLines(audio.currentTime || 0)
-  })
-}
-
-async function initLyrics() {
-  try {
-    const res = await fetch(`/yesterday.lrc?v=${Date.now()}`, { cache: 'no-store' })
-    if (!res.ok) return
-    const text = await res.text()
-    lrcLines = parseLrc(text)
-    lyricReady.value = lrcLines.length > 0
-    scheduleLyricUpdate()
-  } catch (_) {}
-}
-
 function getGridClass(count) {
   if (count === 1) return 'grid-cols-1'
   return 'grid-cols-2'
@@ -202,82 +108,6 @@ function ensureMusicPlaying() {
       musicPlaying.value = true
     })
     .catch(() => {})
-}
-
-function ensureZoomUi() {
-  if (!zoomCaptionEl) {
-    zoomCaptionEl = document.createElement('div')
-    zoomCaptionEl.className =
-      'fixed px-4 py-2 text-center text-white text-base sm:text-lg font-medium bg-black/60 rounded-full z-[9999] pointer-events-none'
-    zoomCaptionEl.style.display = 'none'
-    document.body.appendChild(zoomCaptionEl)
-  }
-  if (!zoomCloseEl) {
-    zoomCloseEl = document.createElement('button')
-    zoomCloseEl.type = 'button'
-    zoomCloseEl.setAttribute('aria-label', 'Close')
-    zoomCloseEl.className =
-      'fixed top-4 right-4 w-10 h-10 flex items-center justify-center bg-black/60 text-white text-3xl font-bold rounded-full hover:bg-black/80 transition-colors z-[10000]'
-    zoomCloseEl.style.display = 'none'
-    zoomCloseEl.innerHTML = '&times;'
-    zoomCloseEl.addEventListener('click', (e) => {
-      e.preventDefault()
-      e.stopPropagation()
-      if (zoom) zoom.close()
-    })
-    document.body.appendChild(zoomCloseEl)
-  }
-}
-
-function positionZoomCaption() {
-  if (!zoomCaptionEl || zoomCaptionEl.style.display === 'none') return
-  const zoomedImg =
-    document.querySelector('.medium-zoom-image--opened') || document.querySelector('.medium-zoom-image--open')
-  if (!zoomedImg) return
-
-  const rect = zoomedImg.getBoundingClientRect()
-  const centerX = rect.left + rect.width / 2
-
-  zoomCaptionEl.style.left = `${centerX}px`
-  zoomCaptionEl.style.transform = 'translateX(-50%)'
-  zoomCaptionEl.style.maxWidth = `${Math.max(0, rect.width - 16)}px`
-  zoomCaptionEl.style.whiteSpace = 'nowrap'
-  zoomCaptionEl.style.overflow = 'hidden'
-  zoomCaptionEl.style.textOverflow = 'ellipsis'
-
-  requestAnimationFrame(() => {
-    const captionRect = zoomCaptionEl.getBoundingClientRect()
-    const top = Math.max(8 + (window.visualViewport?.offsetTop || 0), rect.top - captionRect.height - 12)
-    zoomCaptionEl.style.top = `${top}px`
-  })
-}
-
-function onZoomClick(e) {
-  if (!zoom) return
-  const target = e?.currentTarget
-  if (!target) return
-  zoom.attach(target)
-  zoom.open({ target })
-}
-
-function loadImagesOnPage(pageElement) {
-  if (!pageElement || pageElement.dataset.imagesLoaded === 'true') return
-  const images = pageElement.querySelectorAll('img[data-src]')
-  images.forEach((img) => {
-    if (img.dataset.src) {
-      const imgObj = new Image()
-      imgObj.onload = () => {
-        img.src = img.dataset.src
-        img.style.opacity = '0'
-        img.style.transition = 'opacity 0.3s ease-in-out'
-        setTimeout(() => {
-          img.style.opacity = '1'
-        }, 10)
-      }
-      imgObj.src = img.dataset.src
-    }
-  })
-  pageElement.dataset.imagesLoaded = 'true'
 }
 
 function triggerEasterEgg() {
@@ -505,214 +335,6 @@ function initFabPosition() {
   updateFabBottom()
 }
 
-function initTapToFlip() {
-  const el = bookContainerRef.value
-  if (!el) return
-  const isTouchDevice = () => (navigator && navigator.maxTouchPoints > 0) || 'ontouchstart' in window
-
-  tapToFlipDownHandler = (e) => {
-    if (!isTouchDevice()) return
-    if (e.pointerType === 'mouse') return
-    if (e.button != null && e.button !== 0) return
-
-    tapToFlipInput = 'pointer'
-    tapToFlipStart = {
-      x: e.clientX,
-      y: e.clientY,
-      t: Date.now(),
-      target: e.target,
-      pointerId: e.pointerId,
-      moved: false,
-    }
-  }
-
-  tapToFlipMoveHandler = (e) => {
-    const start = tapToFlipStart
-    if (!start) return
-    if (start.pointerId != null && e.pointerId != null && start.pointerId !== e.pointerId) return
-
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
-    if (dx * dx + dy * dy > 144) start.moved = true
-  }
-
-  tapToFlipUpHandler = (e) => {
-    const start = tapToFlipStart
-    tapToFlipStart = null
-    if (!start) return
-    if (!pageFlip) return
-
-    if (!isTouchDevice()) return
-    if (e.pointerType === 'mouse') return
-    if (Date.now() - start.t > 600) return
-
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
-    if (dx * dx + dy * dy > 144) return
-    if (start.moved) return
-
-    const target = start.target
-    if (
-      target &&
-      target.closest &&
-      target.closest('a,button,input,textarea,select,label,img,video,#lightbox,#about-us-modal,.polaroid-frame')
-    )
-      return
-
-    e.preventDefault()
-    e.stopImmediatePropagation()
-
-    const rect = el.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    if (x > rect.width / 2) pageFlip.flipNext()
-    else pageFlip.flipPrev()
-  }
-
-  tapToFlipCancelHandler = () => {
-    tapToFlipStart = null
-    tapToFlipInput = null
-  }
-
-  tapToFlipTouchStartHandler = (e) => {
-    if (!isTouchDevice()) return
-    if (tapToFlipInput === 'pointer') return
-    if (!e.changedTouches || e.changedTouches.length !== 1) return
-    const t = e.changedTouches[0]
-    tapToFlipInput = 'touch'
-    tapToFlipStart = {
-      x: t.clientX,
-      y: t.clientY,
-      t: Date.now(),
-      target: e.target,
-      moved: false,
-    }
-  }
-
-  tapToFlipTouchMoveHandler = (e) => {
-    const start = tapToFlipStart
-    if (!start) return
-    if (tapToFlipInput !== 'touch') return
-    if (!e.changedTouches || e.changedTouches.length !== 1) return
-    const t = e.changedTouches[0]
-    const dx = t.clientX - start.x
-    const dy = t.clientY - start.y
-    if (dx * dx + dy * dy > 144) start.moved = true
-  }
-
-  tapToFlipTouchEndHandler = (e) => {
-    const start = tapToFlipStart
-    tapToFlipStart = null
-    tapToFlipInput = null
-    if (!start) return
-    if (!pageFlip) return
-    if (!isTouchDevice()) return
-    if (!e.changedTouches || e.changedTouches.length !== 1) return
-    if (Date.now() - start.t > 600) return
-    if (start.moved) return
-
-    const target = start.target
-    if (
-      target &&
-      target.closest &&
-      target.closest('a,button,input,textarea,select,label,img,video,#lightbox,#about-us-modal,.polaroid-frame')
-    )
-      return
-
-    e.preventDefault()
-    e.stopImmediatePropagation()
-
-    const t = e.changedTouches[0]
-    const rect = el.getBoundingClientRect()
-    const x = t.clientX - rect.left
-    if (x > rect.width / 2) pageFlip.flipNext()
-    else pageFlip.flipPrev()
-  }
-
-  tapToFlipTouchCancelHandler = () => {
-    tapToFlipStart = null
-    tapToFlipInput = null
-  }
-
-  el.addEventListener('pointerdown', tapToFlipDownHandler, { capture: true, passive: true })
-  el.addEventListener('pointermove', tapToFlipMoveHandler, { capture: true, passive: true })
-  el.addEventListener('pointerup', tapToFlipUpHandler, { capture: true, passive: false })
-  el.addEventListener('pointercancel', tapToFlipCancelHandler, { capture: true, passive: true })
-
-  el.addEventListener('touchstart', tapToFlipTouchStartHandler, { capture: true, passive: true })
-  el.addEventListener('touchmove', tapToFlipTouchMoveHandler, { capture: true, passive: true })
-  el.addEventListener('touchend', tapToFlipTouchEndHandler, { capture: true, passive: false })
-  el.addEventListener('touchcancel', tapToFlipTouchCancelHandler, { capture: true, passive: true })
-}
-
-function initPageFlip() {
-  const bookEl = bookRef.value
-  if (!bookEl) return
-  const St = window.St
-  if (!St || !St.PageFlip) return
-
-  setTimeout(() => {
-    pageFlip = new St.PageFlip(bookEl, {
-      width: 400,
-      height: 600,
-      size: 'stretch',
-      minWidth: 300,
-      maxWidth: 900,
-      minHeight: 400,
-      maxHeight: 1100,
-      maxShadowOpacity: 0.25,
-      showCover: true,
-      mobileScrollSupport: false,
-      usePortrait: true,
-      drawShadow: false,
-    })
-
-    pageFlip.loadFromHTML(bookEl.querySelectorAll('.page'))
-
-    for (let i = 0; i < Math.min(posts.length, 3); i += 1) {
-      const pageEl = bookEl.querySelector(`[data-page-index="${i}"]`)
-      if (pageEl) loadImagesOnPage(pageEl)
-    }
-
-    pageFlip.on('flip', (e) => {
-      const rightPageNum = e.data
-      const preloadBuffer = 2
-      const leftPageNum = rightPageNum - 1
-
-      if (leftPageNum >= 1) {
-        const leftPageEl = bookEl.querySelector(`[data-page-index="${leftPageNum - 1}"]`)
-        if (leftPageEl) preloadTimers.push(window.setTimeout(() => loadImagesOnPage(leftPageEl), 180))
-      }
-      if (rightPageNum <= posts.length) {
-        const rightPageEl = bookEl.querySelector(`[data-page-index="${rightPageNum - 1}"]`)
-        if (rightPageEl) preloadTimers.push(window.setTimeout(() => loadImagesOnPage(rightPageEl), 180))
-      }
-
-      for (let i = 1; i <= preloadBuffer; i += 1) {
-        const pageToPreload = rightPageNum + i
-        if (pageToPreload <= posts.length) {
-          const preloadPageEl = bookEl.querySelector(`[data-page-index="${pageToPreload - 1}"]`)
-          if (preloadPageEl) {
-            enqueuePreload(preloadPageEl)
-          }
-        }
-      }
-
-      if (rightPageNum === pageFlip.getPageCount() - 1) {
-        setTimeout(triggerEasterEgg, 500)
-      }
-    })
-  }, 100)
-}
-
-function initKeyboardNavigation() {
-  keydownHandler = (e) => {
-    if (!pageFlip) return
-    if (e.key === 'ArrowRight') pageFlip.flipNext()
-    if (e.key === 'ArrowLeft') pageFlip.flipPrev()
-  }
-  document.addEventListener('keydown', keydownHandler)
-}
-
 function cleanup() {
   if (bubbleInterval) clearInterval(bubbleInterval)
   bubbleInterval = null
@@ -723,9 +345,6 @@ function cleanup() {
   if (firstMusicScrollHandler) window.removeEventListener('scroll', firstMusicScrollHandler)
   firstMusicScrollHandler = null
 
-  if (keydownHandler) document.removeEventListener('keydown', keydownHandler)
-  keydownHandler = null
-
   if (fullscreenChangeHandler) document.removeEventListener('fullscreenchange', fullscreenChangeHandler)
   fullscreenChangeHandler = null
 
@@ -735,52 +354,9 @@ function cleanup() {
   }
   fabPositionHandler = null
 
-  const containerEl = bookContainerRef.value
-  if (containerEl) {
-    if (tapToFlipDownHandler) containerEl.removeEventListener('pointerdown', tapToFlipDownHandler)
-    if (tapToFlipMoveHandler) containerEl.removeEventListener('pointermove', tapToFlipMoveHandler)
-    if (tapToFlipUpHandler) containerEl.removeEventListener('pointerup', tapToFlipUpHandler)
-    if (tapToFlipCancelHandler) containerEl.removeEventListener('pointercancel', tapToFlipCancelHandler)
-    if (tapToFlipTouchStartHandler) containerEl.removeEventListener('touchstart', tapToFlipTouchStartHandler)
-    if (tapToFlipTouchMoveHandler) containerEl.removeEventListener('touchmove', tapToFlipTouchMoveHandler)
-    if (tapToFlipTouchEndHandler) containerEl.removeEventListener('touchend', tapToFlipTouchEndHandler)
-    if (tapToFlipTouchCancelHandler) containerEl.removeEventListener('touchcancel', tapToFlipTouchCancelHandler)
-  }
-  tapToFlipDownHandler = null
-  tapToFlipMoveHandler = null
-  tapToFlipUpHandler = null
-  tapToFlipCancelHandler = null
-  tapToFlipTouchStartHandler = null
-  tapToFlipTouchMoveHandler = null
-  tapToFlipTouchEndHandler = null
-  tapToFlipTouchCancelHandler = null
-  tapToFlipStart = null
-  tapToFlipInput = null
-
-  if (zoom) zoom.detach()
-  zoom = null
-  if (zoomCaptionEl) zoomCaptionEl.remove()
-  zoomCaptionEl = null
-  if (zoomCloseEl) zoomCloseEl.remove()
-  zoomCloseEl = null
-  if (zoomCaptionPositionHandler) window.removeEventListener('resize', zoomCaptionPositionHandler)
-  zoomCaptionPositionHandler = null
-
-  if (preloadTimers.length) preloadTimers.forEach((t) => window.clearTimeout(t))
-  preloadTimers = []
-  preloadChain = Promise.resolve()
-
-  const audio = audioRef.value
-  if (audio) {
-    if (lyricTimeUpdateHandler) audio.removeEventListener('timeupdate', lyricTimeUpdateHandler)
-    if (lyricSeekedHandler) audio.removeEventListener('seeked', lyricSeekedHandler)
-    if (lyricPlayHandler) audio.removeEventListener('play', lyricPlayHandler)
-  }
-  lyricTimeUpdateHandler = null
-  lyricSeekedHandler = null
-  lyricPlayHandler = null
-  if (lyricRaf) window.cancelAnimationFrame(lyricRaf)
-  lyricRaf = null
+  cleanupPageFlip()
+  cleanupZoom()
+  cleanupLyrics()
 }
 
 onMounted(async () => {
@@ -794,41 +370,8 @@ onMounted(async () => {
   initTapToFlip()
 
   await initLyrics()
-  const audio = audioRef.value
-  if (audio) {
-    lyricTimeUpdateHandler = () => scheduleLyricUpdate()
-    lyricSeekedHandler = () => scheduleLyricUpdate()
-    lyricPlayHandler = () => scheduleLyricUpdate()
-    audio.addEventListener('timeupdate', lyricTimeUpdateHandler)
-    audio.addEventListener('seeked', lyricSeekedHandler)
-    audio.addEventListener('play', lyricPlayHandler)
-  }
-
-  zoom = mediumZoom('img[data-zoomable="true"]', { background: 'rgba(0, 0, 0, 0.9)' })
-  zoom.on('open', (e) => {
-    ensureZoomUi()
-    const target = e?.target
-    const caption = target?.dataset?.zoomCaption || target?.alt || ''
-    if (zoomCaptionEl) {
-      zoomCaptionEl.textContent = caption
-      zoomCaptionEl.style.display = caption ? '' : 'none'
-    }
-    if (zoomCloseEl) zoomCloseEl.style.display = ''
-    ensureMusicPlaying()
-  })
-  zoom.on('opened', () => {
-    positionZoomCaption()
-    if (!zoomCaptionPositionHandler) {
-      zoomCaptionPositionHandler = throttle(positionZoomCaption, 50)
-      window.addEventListener('resize', zoomCaptionPositionHandler)
-    }
-  })
-  zoom.on('close', () => {
-    if (zoomCaptionEl) zoomCaptionEl.style.display = 'none'
-    if (zoomCloseEl) zoomCloseEl.style.display = 'none'
-    if (zoomCaptionPositionHandler) window.removeEventListener('resize', zoomCaptionPositionHandler)
-    zoomCaptionPositionHandler = null
-  })
+  bindLyricsAudio()
+  initZoom()
 
   fullscreenChangeHandler = () => {
     if (!document.fullscreenElement && immersiveActive.value) {
