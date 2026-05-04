@@ -2,6 +2,8 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
   let pageFlip = null
   let keydownHandler = null
   let easterEggArmed = true
+  let bookEl = null
+  let postsCount = 0
 
   let tapToFlipDownHandler = null
   let tapToFlipMoveHandler = null
@@ -55,6 +57,29 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
           }, 1500)
         }),
     )
+  }
+
+  function preloadPostIndex(postIndex) {
+    if (!bookEl) return
+    if (typeof postIndex !== 'number') return
+    if (postIndex < 0 || postIndex >= postsCount) return
+    const pageEl = bookEl.querySelector(`[data-page-index="${postIndex}"]`)
+    if (pageEl) loadImagesOnPage(pageEl)
+  }
+
+  function preloadForPageFlipIndex(pageIndex, buffer = 1) {
+    if (typeof pageIndex !== 'number') return
+    const postIndex = pageIndex - 1
+    preloadPostIndex(postIndex)
+    for (let i = 1; i <= buffer; i += 1) preloadPostIndex(postIndex + i)
+  }
+
+  function preloadBeforeFlip(dir) {
+    if (!pageFlip) return
+    if (typeof pageFlip.getCurrentPageIndex !== 'function') return
+    const idx = pageFlip.getCurrentPageIndex()
+    if (typeof idx !== 'number') return
+    preloadForPageFlipIndex(idx + dir, 1)
   }
 
   function initTapToFlip() {
@@ -116,8 +141,13 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
 
       const rect = el.getBoundingClientRect()
       const x = e.clientX - rect.left
-      if (x > rect.width / 2) pageFlip.flipNext()
-      else pageFlip.flipPrev()
+      if (x > rect.width / 2) {
+        preloadBeforeFlip(1)
+        pageFlip.flipNext()
+      } else {
+        preloadBeforeFlip(-1)
+        pageFlip.flipPrev()
+      }
     }
 
     tapToFlipCancelHandler = () => {
@@ -176,8 +206,13 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
       const t = e.changedTouches[0]
       const rect = el.getBoundingClientRect()
       const x = t.clientX - rect.left
-      if (x > rect.width / 2) pageFlip.flipNext()
-      else pageFlip.flipPrev()
+      if (x > rect.width / 2) {
+        preloadBeforeFlip(1)
+        pageFlip.flipNext()
+      } else {
+        preloadBeforeFlip(-1)
+        pageFlip.flipPrev()
+      }
     }
 
     tapToFlipTouchCancelHandler = () => {
@@ -197,7 +232,7 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
   }
 
   function initPageFlip() {
-    const bookEl = bookRef?.value
+    bookEl = bookRef?.value
     if (!bookEl) return
     const St = window.St
     if (!St || !St.PageFlip) return
@@ -221,6 +256,7 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
       pageFlip.loadFromHTML(bookEl.querySelectorAll('.page'))
 
       const count = Array.isArray(posts) ? posts.length : 0
+      postsCount = count
       for (let i = 0; i < Math.min(count, 3); i += 1) {
         const pageEl = bookEl.querySelector(`[data-page-index="${i}"]`)
         if (pageEl) loadImagesOnPage(pageEl)
@@ -269,8 +305,14 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
   function initKeyboardNavigation() {
     keydownHandler = (e) => {
       if (!pageFlip) return
-      if (e.key === 'ArrowRight') pageFlip.flipNext()
-      if (e.key === 'ArrowLeft') pageFlip.flipPrev()
+      if (e.key === 'ArrowRight') {
+        preloadBeforeFlip(1)
+        pageFlip.flipNext()
+      }
+      if (e.key === 'ArrowLeft') {
+        preloadBeforeFlip(-1)
+        pageFlip.flipPrev()
+      }
     }
     document.addEventListener('keydown', keydownHandler)
   }
@@ -306,6 +348,8 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
     preloadTimers = []
     preloadChain = Promise.resolve()
     pageFlip = null
+    bookEl = null
+    postsCount = 0
   }
 
   return {
