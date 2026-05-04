@@ -79,7 +79,9 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
     if (typeof pageFlip.getCurrentPageIndex !== 'function') return
     const idx = pageFlip.getCurrentPageIndex()
     if (typeof idx !== 'number') return
-    preloadForPageFlipIndex(idx + dir, 1)
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1024
+    const buffer = w >= 640 ? 2 : 1
+    preloadForPageFlipIndex(idx + dir, buffer)
   }
 
   function initTapToFlip() {
