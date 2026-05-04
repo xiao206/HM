@@ -1,6 +1,7 @@
 export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg } = {}) {
   let pageFlip = null
   let keydownHandler = null
+  let easterEggArmed = true
 
   let tapToFlipDownHandler = null
   let tapToFlipMoveHandler = null
@@ -249,8 +250,17 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
           }
         }
 
-        if (typeof triggerEasterEgg === 'function' && rightPageNum === pageFlip.getPageCount() - 1) {
-          setTimeout(triggerEasterEgg, 500)
+        if (typeof triggerEasterEgg === 'function') {
+          const idx = typeof pageFlip.getCurrentPageIndex === 'function' ? pageFlip.getCurrentPageIndex() : null
+          const total = typeof pageFlip.getPageCount === 'function' ? pageFlip.getPageCount() : null
+          const isEnd =
+            typeof idx === 'number' && typeof total === 'number' ? idx >= total - 2 : typeof rightPageNum === 'number' && rightPageNum >= count
+          if (!isEnd) {
+            easterEggArmed = true
+          } else if (easterEggArmed) {
+            easterEggArmed = false
+            setTimeout(triggerEasterEgg, 500)
+          }
         }
       })
     }, 100)
@@ -268,6 +278,7 @@ export function usePageFlip({ bookRef, bookContainerRef, posts, triggerEasterEgg
   function cleanupPageFlip() {
     if (keydownHandler) document.removeEventListener('keydown', keydownHandler)
     keydownHandler = null
+    easterEggArmed = true
 
     const containerEl = bookContainerRef?.value
     if (containerEl) {

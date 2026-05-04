@@ -114,9 +114,12 @@ function triggerEasterEgg() {
   if (easterEggPlaying) return
   easterEggPlaying = true
 
-  const message = easterEggMessageRef.value
-  const container = fireworksContainerRef.value
-  if (!message || !container) return
+  const message = easterEggMessageRef.value || document.getElementById('easter-egg-message')
+  const container = fireworksContainerRef.value || document.getElementById('fireworks-container')
+  if (!message || !container) {
+    easterEggPlaying = false
+    return
+  }
 
   message.style.opacity = '1'
   container.style.opacity = '1'
@@ -636,12 +639,14 @@ onBeforeUnmount(() => {
   <div
     id="fireworks-container"
     ref="fireworksContainerRef"
+    v-once
     class="fixed inset-0 pointer-events-none z-40 overflow-hidden bg-gradient-to-t from-white/90 via-white/50 to-transparent opacity-0 transition-opacity duration-1000"
     style="opacity: 0"
   ></div>
   <div
     id="easter-egg-message"
     ref="easterEggMessageRef"
+    v-once
     class="fixed bottom-32 sm:bottom-32 left-0 right-0 text-center text-3xl sm:text-5xl font-normal text-gray-800 opacity-0 transition-opacity duration-1000 z-50 pointer-events-none drop-shadow-lg px-4"
     style="
       font-family: 'Playfair Display', serif;
