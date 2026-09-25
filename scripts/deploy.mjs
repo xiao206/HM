@@ -95,11 +95,18 @@ try {
 
   copyDir(builtDist, tempDist)
 
+  // 在切换分支前保存 wrangler.jsonc（main 分支上不存在此文件）
+  const wranglerPath = path.join(repoRoot, 'wrangler.jsonc')
+  const tempWrangler = path.join(tempDir, 'wrangler.jsonc')
+  if (exists(wranglerPath)) {
+    fs.copyFileSync(wranglerPath, tempWrangler)
+  }
+
   const featHash = execText('git', ['rev-parse', '--short', 'HEAD'])
 
   exec('git', ['fetch', 'origin', 'main'])
 
-  const hasLocalMain = exists(path.join(repoRoot, '.git', 'refs', 'heads', 'main'))
+  const hasLocalMain = exists(path.join(repoRoot, '.git', 'refs', 'heads', 'main']))
   if (!hasLocalMain) {
     exec('git', ['checkout', '-B', 'main', 'origin/main'])
   } else {
@@ -113,7 +120,12 @@ try {
   fs.rmSync(deployDist, { recursive: true, force: true })
   copyDir(tempDist, deployDist)
 
-  exec('git', ['add', 'dist'])
+  // 恢复 wrangler.jsonc 到 main 分支，供 Cloudflare 部署使用
+  if (exists(tempWrangler)) {
+    fs.copyFileSync(tempWrangler, wranglerPath)
+  }
+
+  exec('git', ['add', 'dist', 'wrangler.jsonc'])
 
   let hasChanges = true
   try {
