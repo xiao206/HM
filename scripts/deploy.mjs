@@ -106,7 +106,7 @@ try {
 
   exec('git', ['fetch', 'origin', 'main'])
 
-  const hasLocalMain = exists(path.join(repoRoot, '.git', 'refs', 'heads', 'main']))
+  const hasLocalMain = exists(path.join(repoRoot, '.git', 'refs', 'heads', 'main'))
   if (!hasLocalMain) {
     exec('git', ['checkout', '-B', 'main', 'origin/main'])
   } else {
