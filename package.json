@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npm run build && npx wrangler deploy",
+    "cf:deploy": "npm run build && npx wrangler versions upload",
     "deploy:main": "node scripts/deploy.mjs",
     "deploy:main:dry": "node scripts/deploy.mjs --dry-run"
   },
