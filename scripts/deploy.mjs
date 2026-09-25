@@ -12,7 +12,7 @@ function resolveCmd(cmd) {
 function exec(cmd, args, opts = {}) {
   return execFileSync(resolveCmd(cmd), args, {
     stdio: 'inherit',
-    shell: isWin,
+    shell: isWin && cmd === 'npm',
     ...opts,
   })
 }
@@ -21,7 +21,7 @@ function execText(cmd, args, opts = {}) {
   return execFileSync(resolveCmd(cmd), args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
-    shell: isWin,
+    shell: isWin && cmd === 'npm',
     ...opts,
   }).trim()
 }
