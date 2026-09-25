@@ -3,15 +3,21 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+const isWin = process.platform === 'win32'
+
+function resolveCmd(cmd) {
+  return isWin && cmd === 'npm' ? 'npm.cmd' : cmd
+}
+
 function exec(cmd, args, opts = {}) {
-  return execFileSync(cmd, args, {
+  return execFileSync(resolveCmd(cmd), args, {
     stdio: 'inherit',
     ...opts,
   })
 }
 
 function execText(cmd, args, opts = {}) {
-  return execFileSync(cmd, args, {
+  return execFileSync(resolveCmd(cmd), args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'inherit'],
     ...opts,
